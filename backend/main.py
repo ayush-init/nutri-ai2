@@ -1,0 +1,1 @@
+print("FoodLens backend starte!")
