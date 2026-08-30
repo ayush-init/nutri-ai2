@@ -1,16 +1,15 @@
-import cv2
+from ultralytics import YOLO
 
-image = cv2.imread("data/test_food.jpg")
+model = YOLO("yolo11n.pt")
 
-if image is None:
-    print("Could not read image")
-else:
-    print("Image loaded successfully")
-    print("Original shape:", image.shape)
+results = model("data/test_food.jpg")
 
-    resized = cv2.resize(image, (640, 640))
+for result in results:
+    result.save(filename="data/detected_food.jpg")
 
-    cv2.imwrite("data/resized_food.jpg", resized)
+    for box in result.boxes:
+        class_id = int(box.cls[0])
+        confidence = float(box.conf[0])
+        class_name = result.names[class_id]
 
-    print("Resized image saved successfully")
-    print("New shape:", resized.shape)
+        print(f"{class_name}: {confidence:.2f}")
