@@ -1,10 +1,11 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from app.models.food import FoodItem
 from app.schemas.nutrition import FoodItemNutrition, MealNutritionSummary, CalorieRange, MacroRange
 from app.schemas.detection import DetectedFoodItem
 from typing import List, Dict, Any
 
-# Uncertainty buffer (?15% for photo-based portion variance)
+# Uncertainty buffer (±15% for photo-based portion variance)
 VARIANCE_FACTOR = 0.15
 
 class NutritionEngineService:
@@ -15,7 +16,28 @@ class NutritionEngineService:
 
     @staticmethod
     def get_or_fallback_food(db: Session, label: str) -> Dict[str, Any]:
-        item = db.query(FoodItem).filter(FoodItem.label == label).first()
+        clean_label = label.strip().lower()
+        variants = [
+            clean_label,
+            clean_label.replace(" ", "_"),
+            clean_label.replace("_", " "),
+            clean_label.split("_")[-1],  # e.g. 'rice' from 'steamed_rice'
+            clean_label.split("_")[0]   # e.g. 'chicken' from 'chicken_curry'
+        ]
+
+        item = None
+        for v in variants:
+            item = db.query(FoodItem).filter(
+                or_(
+                    FoodItem.label == v,
+                    FoodItem.label == v.replace(" ", "_"),
+                    FoodItem.label.ilike(f"%{v}%"),
+                    FoodItem.display_name.ilike(f"%{v}%")
+                )
+            ).first()
+            if item:
+                break
+
         if item:
             return {
                 "label": item.label,
@@ -25,12 +47,12 @@ class NutritionEngineService:
                 "prot_100g": item.protein_per_100g,
                 "carbs_100g": item.carbs_per_100g,
                 "fat_100g": item.fat_per_100g,
-                "fiber_100g": item.fiber_per_100g,
-                "serving_name": item.default_serving_name,
-                "serving_grams": item.default_serving_grams,
-                "is_veg": item.is_vegetarian,
-                "is_vegan": item.is_vegan,
-                "is_gf": item.is_gluten_free
+                "fiber_100g": item.fiber_per_100g or 0.0,
+                "serving_name": item.default_serving_name or "1 standard portion",
+                "serving_grams": item.default_serving_grams or 100.0,
+                "is_veg": item.is_vegetarian if item.is_vegetarian is not None else True,
+                "is_vegan": item.is_vegan if item.is_vegan is not None else False,
+                "is_gf": item.is_gluten_free if item.is_gluten_free is not None else True
             }
         
         # Fallback default values
@@ -38,13 +60,13 @@ class NutritionEngineService:
             "label": label,
             "display_name": label.replace("_", " ").title(),
             "category": "general_food",
-            "cal_100g": 120.0,
-            "prot_100g": 4.0,
-            "carbs_100g": 18.0,
-            "fat_100g": 3.0,
+            "cal_100g": 135.0,
+            "prot_100g": 5.0,
+            "carbs_100g": 20.0,
+            "fat_100g": 4.0,
             "fiber_100g": 2.0,
             "serving_name": "1 standard portion",
-            "serving_grams": 100.0,
+            "serving_grams": 120.0,
             "is_veg": True,
             "is_vegan": False,
             "is_gf": True
@@ -78,83 +100,104 @@ class NutritionEngineService:
 
         has_uncertain = False
 
-        # Group by label to avoid duplicate row spam for multiple detections of same food
-        label_groups: Dict[str, List[DetectedFoodItem]] = {}
         for det in detections:
-            label_groups.setdefault(det.label, []).append(det)
+            if det.confidence < 0.40:
+                has_uncertain = True
 
-        for label, group in label_groups.items():
-            best_det = max(group, key=lambda d: d.confidence)
-            count = float(len(group))
-            food_meta = cls.get_or_fallback_food(db, label)
+            finfo = cls.get_or_fallback_food(db, det.label)
 
-            multiplier = (food_meta["serving_grams"] / 100.0) * count
+            # Heuristic portion sizing based on bounding box relative area
+            box_area = (det.bbox.x_max - det.bbox.x_min) * (det.bbox.y_max - det.bbox.y_min)
+            if box_area > 300000:
+                portion_mult = 1.3
+            elif box_area < 40000:
+                portion_mult = 0.6
+            else:
+                portion_mult = 1.0
 
-            avg_cal = food_meta["cal_100g"] * multiplier
+            est_grams = round(finfo["serving_grams"] * portion_mult, 1)
+            scale = est_grams / 100.0
+
+            # Base macro calculations for this detected item
+            avg_cal = round(finfo["cal_100g"] * scale, 1)
             min_cal = round(avg_cal * (1.0 - VARIANCE_FACTOR), 1)
             max_cal = round(avg_cal * (1.0 + VARIANCE_FACTOR), 1)
-            avg_cal = round(avg_cal, 1)
 
-            avg_prot = food_meta["prot_100g"] * multiplier
-            min_prot = round(avg_prot * (1.0 - VARIANCE_FACTOR), 1)
-            max_prot = round(avg_prot * (1.0 + VARIANCE_FACTOR), 1)
-            avg_prot = round(avg_prot, 1)
+            avg_p = round(finfo["prot_100g"] * scale, 1)
+            min_p = round(avg_p * (1.0 - VARIANCE_FACTOR), 1)
+            max_p = round(avg_p * (1.0 + VARIANCE_FACTOR), 1)
 
-            avg_carb = food_meta["carbs_100g"] * multiplier
-            min_carb = round(avg_carb * (1.0 - VARIANCE_FACTOR), 1)
-            max_carb = round(avg_carb * (1.0 + VARIANCE_FACTOR), 1)
-            avg_carb = round(avg_carb, 1)
+            avg_c = round(finfo["carbs_100g"] * scale, 1)
+            min_c = round(avg_c * (1.0 - VARIANCE_FACTOR), 1)
+            max_c = round(avg_c * (1.0 + VARIANCE_FACTOR), 1)
 
-            avg_fat = food_meta["fat_100g"] * multiplier
-            min_fat = round(avg_fat * (1.0 - VARIANCE_FACTOR), 1)
-            max_fat = round(avg_fat * (1.0 + VARIANCE_FACTOR), 1)
-            avg_fat = round(avg_fat, 1)
+            avg_f = round(finfo["fat_100g"] * scale, 1)
+            min_f = round(avg_f * (1.0 - VARIANCE_FACTOR), 1)
+            max_f = round(avg_f * (1.0 + VARIANCE_FACTOR), 1)
 
+            avg_fib = round(finfo["fiber_100g"] * scale, 1)
+            min_fib = round(avg_fib * (1.0 - VARIANCE_FACTOR), 1)
+            max_fib = round(avg_fib * (1.0 + VARIANCE_FACTOR), 1)
+
+            # Accumulate totals
             tot_min_cal += min_cal
             tot_max_cal += max_cal
             tot_avg_cal += avg_cal
 
-            tot_min_prot += min_prot
-            tot_max_prot += max_prot
-            tot_avg_prot += avg_prot
+            tot_min_prot += min_p
+            tot_max_prot += max_p
+            tot_avg_prot += avg_p
 
-            tot_min_carb += min_carb
-            tot_max_carb += max_carb
-            tot_avg_carb += avg_carb
+            tot_min_carb += min_c
+            tot_max_carb += max_c
+            tot_avg_carb += avg_c
 
-            tot_min_fat += min_fat
-            tot_max_fat += max_fat
-            tot_avg_fat += avg_fat
+            tot_min_fat += min_f
+            tot_max_fat += max_f
+            tot_avg_fat += avg_f
 
-            if best_det.confidence < 0.40:
-                has_uncertain = True
-
-            item_nutritions.append(
-                FoodItemNutrition(
-                    label=label,
-                    display_name=food_meta["display_name"],
-                    category=food_meta["category"],
-                    serving_name=food_meta["serving_name"],
-                    serving_grams=food_meta["serving_grams"],
-                    serving_count=count,
-                    calories=CalorieRange(min_kcal=min_cal, max_kcal=max_cal, avg_kcal=avg_cal),
-                    protein=MacroRange(min_val=min_prot, max_val=max_prot, avg_val=avg_prot),
-                    carbs=MacroRange(min_val=min_carb, max_val=max_carb, avg_val=avg_carb),
-                    fat=MacroRange(min_val=min_fat, max_val=max_fat, avg_val=avg_fat),
-                    is_vegetarian=food_meta["is_veg"],
-                    is_vegan=food_meta["is_vegan"],
-                    is_gluten_free=food_meta["is_gf"],
-                    confidence=best_det.confidence,
-                    confidence_level=best_det.confidence_level
-                )
-            )
+            item_nutritions.append(FoodItemNutrition(
+                label=det.label,
+                display_name=finfo["display_name"],
+                category=finfo["category"],
+                serving_name=finfo["serving_name"],
+                serving_grams=est_grams,
+                serving_count=portion_mult,
+                calories=CalorieRange(min_kcal=min_cal, max_kcal=max_cal, avg_kcal=avg_cal),
+                protein=MacroRange(min_val=min_p, max_val=max_p, avg_val=avg_p),
+                carbs=MacroRange(min_val=min_c, max_val=max_c, avg_val=avg_c),
+                fat=MacroRange(min_val=min_f, max_val=max_f, avg_val=avg_f),
+                fiber=MacroRange(min_val=min_fib, max_val=max_fib, avg_val=avg_fib),
+                is_vegetarian=finfo["is_veg"],
+                is_vegan=finfo["is_vegan"],
+                is_gluten_free=finfo["is_gf"],
+                confidence=det.confidence,
+                confidence_level=det.confidence_level
+            ))
 
         return MealNutritionSummary(
-            total_calories=CalorieRange(min_kcal=round(tot_min_cal, 1), max_kcal=round(tot_max_cal, 1), avg_kcal=round(tot_avg_cal, 1)),
-            total_protein=MacroRange(min_val=round(tot_min_prot, 1), max_val=round(tot_max_prot, 1), avg_val=round(tot_avg_prot, 1)),
-            total_carbs=MacroRange(min_val=round(tot_min_carb, 1), max_val=round(tot_max_carb, 1), avg_val=round(tot_avg_carb, 1)),
-            total_fat=MacroRange(min_val=round(tot_min_fat, 1), max_val=round(tot_max_fat, 1), avg_val=round(tot_avg_fat, 1)),
+            total_calories=CalorieRange(
+                min_kcal=round(tot_min_cal, 1),
+                max_kcal=round(tot_max_cal, 1),
+                avg_kcal=round(tot_avg_cal, 1)
+            ),
+            total_protein=MacroRange(
+                min_val=round(tot_min_prot, 1),
+                max_val=round(tot_max_prot, 1),
+                avg_val=round(tot_avg_prot, 1)
+            ),
+            total_carbs=MacroRange(
+                min_val=round(tot_min_carb, 1),
+                max_val=round(tot_max_carb, 1),
+                avg_val=round(tot_avg_carb, 1)
+            ),
+            total_fat=MacroRange(
+                min_val=round(tot_min_fat, 1),
+                max_val=round(tot_max_fat, 1),
+                avg_val=round(tot_avg_fat, 1)
+            ),
             detected_items=item_nutritions,
+            disclaimer="Estimates are derived from visual multi-dish detection and standard portion assumptions. Not intended as medical or laboratory measurements.",
             has_uncertain_items=has_uncertain,
             annotated_image_url=annotated_url,
             processing_time_ms=latency_ms
