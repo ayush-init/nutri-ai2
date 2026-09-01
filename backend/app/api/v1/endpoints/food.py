@@ -5,20 +5,18 @@ from typing import List, Dict, Any
 
 from app.core.database import get_db
 from app.models.food import FoodItem
+from app.models.analysis import AnalysisHistory
 from app.services.vision.image_service import image_service
 from app.services.vision.yolo_service import yolo_service
 from app.services.nutrition.nutrition_service import nutrition_service
 from app.schemas.detection import FoodDetectionResponse
 from app.schemas.nutrition import MealNutritionSummary
+import os
 
 router = APIRouter()
 
 @router.get("/items", summary="List Supported Food Classes & Base Nutrition")
 def list_food_items(db: Session = Depends(get_db)):
-    """
-    Returns all 15 supported food classes with base nutritional values per 100g
-    and default serving sizes stored in the Neon database.
-    """
     items = db.query(FoodItem).order_by(FoodItem.label).all()
     return {
         "total": len(items),
@@ -47,10 +45,6 @@ async def detect_foods(
     file: UploadFile = File(..., description="Food photo for detection"),
     conf_threshold: float = Query(0.25, ge=0.05, le=0.95, description="Confidence score threshold")
 ):
-    """
-    Detects visible food classes in an uploaded photo using fine-tuned YOLO.
-    Returns bounding boxes, confidence ratings, and an annotated image link.
-    """
     contents, ext = await image_service.validate_and_read(file)
     img = image_service.decode_image(contents)
     processed_img = image_service.resize_preserving_aspect_ratio(img, max_dim=1280)
@@ -74,16 +68,10 @@ async def analyze_food_meal(
     conf_threshold: float = Query(0.25, ge=0.05, le=0.95, description="Confidence score threshold"),
     db: Session = Depends(get_db)
 ):
-    """
-    End-to-End Food Analysis Pipeline:
-    1. Validates and preprocesses image via OpenCV.
-    2. Runs YOLO object detection to identify food items and bounding boxes.
-    3. Queries Neon PostgreSQL for nutritional parameters.
-    4. Computes calorie and macronutrient estimation ranges with portion multipliers.
-    """
     contents, ext = await image_service.validate_and_read(file)
     img = image_service.decode_image(contents)
     processed_img = image_service.resize_preserving_aspect_ratio(img, max_dim=1280)
+    saved_meta = image_service.save_image(processed_img, ext=ext)
 
     detections, annotated_img, latency_ms = yolo_service.detect(processed_img, conf_threshold=conf_threshold)
     annotated_url = yolo_service.save_annotated(annotated_img)
@@ -94,6 +82,21 @@ async def analyze_food_meal(
         annotated_url=annotated_url,
         latency_ms=latency_ms
     )
+
+    # Persist in Neon DB history
+    title = ", ".join([item.display_name for item in summary.detected_items]) if summary.detected_items else "Meal Analysis"
+    history_entry = AnalysisHistory(
+        analysis_type="food_photo",
+        image_filename=saved_meta["filename"],
+        summary_title=f"Meal: {title[:100]}",
+        total_calories=summary.total_calories.avg_kcal,
+        total_protein=summary.total_protein.avg_val,
+        total_carbs=summary.total_carbs.avg_val,
+        total_fat=summary.total_fat.avg_val,
+        payload=summary.model_dump()
+    )
+    db.add(history_entry)
+    db.commit()
 
     return summary
 
