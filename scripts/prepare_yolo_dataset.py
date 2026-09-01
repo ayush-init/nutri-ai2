@@ -3,34 +3,7 @@ from pathlib import Path
 import random
 
 # --------------------------------------------------
-# 1. Classes we want for our MVP
-# --------------------------------------------------
-
-SELECTED_CLASSES = [
-    "bread",
-    "tomato",
-    "carrot",
-    "chicken_duck",
-    "steak",
-    "potato",
-    "broccoli",
-    "ice_cream",
-    "strawberry",
-    "lettuce",
-    "onion",
-    "rice",
-    "cucumber",
-    "pepper",
-    "pie",
-]
-
-CLASS_TO_ID = {
-    name: index
-    for index, name in enumerate(SELECTED_CLASSES)
-}
-
-# --------------------------------------------------
-# 2. Dataset paths
+# 1. Dataset paths
 # --------------------------------------------------
 
 OUTPUT_DIR = Path("datasets/food_yolo")
@@ -40,10 +13,10 @@ for split in ["train", "val", "test"]:
     (OUTPUT_DIR / "labels" / split).mkdir(parents=True, exist_ok=True)
 
 # --------------------------------------------------
-# 3. Load dataset
+# 2. Load dataset
 # --------------------------------------------------
 
-print("Loading FoodSeg103...")
+print("Loading FoodSeg103 from Hugging Face...")
 
 dataset = load_dataset(
     "pictograph/foodseg103",
@@ -51,27 +24,47 @@ dataset = load_dataset(
 )
 
 print("Dataset loaded!")
-print("Total images:", len(dataset))
+print("Total images in FoodSeg103:", len(dataset))
 
 # --------------------------------------------------
-# 4. Find useful images
+# 3. Discover all 103 classes dynamically
 # --------------------------------------------------
 
-print("\nFiltering images...")
+print("\nDiscovering all food classes...")
+
+all_classes = set()
+for sample in dataset:
+    for name in sample["objects"]["category_names"]:
+        if name and name.strip():
+            all_classes.add(name.strip())
+
+SELECTED_CLASSES = sorted(list(all_classes))
+
+CLASS_TO_ID = {
+    name: index
+    for index, name in enumerate(SELECTED_CLASSES)
+}
+
+print(f"Total Food Classes indexed: {len(SELECTED_CLASSES)}")
+print("Sample classes:", SELECTED_CLASSES[:10])
+
+# --------------------------------------------------
+# 4. Find usable images
+# --------------------------------------------------
+
+print("\nFiltering images containing any of the 103 food classes...")
 
 usable_samples = []
 
 for index, sample in enumerate(dataset):
-
     food_names = sample["objects"]["category_names"]
-
     if any(food in CLASS_TO_ID for food in food_names):
         usable_samples.append(index)
 
-print("Usable images:", len(usable_samples))
+print("Usable images found:", len(usable_samples))
 
 # --------------------------------------------------
-# 5. Shuffle and split
+# 5. Shuffle and split (80% train, 10% val, 10% test)
 # --------------------------------------------------
 
 random.seed(42)
@@ -94,8 +87,8 @@ splits = {
 
 print("\nSplit sizes:")
 print("Train:", len(train_indices))
-print("Val:", len(val_indices))
-print("Test:", len(test_indices))
+print("Val:  ", len(val_indices))
+print("Test: ", len(test_indices))
 
 # --------------------------------------------------
 # 6. Convert bounding boxes to YOLO format
@@ -112,18 +105,18 @@ def convert_bbox_to_yolo(bbox, image_width, image_height):
     width /= image_width
     height /= image_height
 
-    return x_center, y_center, width, height
+    return max(0.0, min(1.0, x_center)), max(0.0, min(1.0, y_center)), max(0.0, min(1.0, width)), max(0.0, min(1.0, height))
 
 
 # --------------------------------------------------
 # 7. Save images and labels
 # --------------------------------------------------
 
-print("\nCreating YOLO dataset...")
+print("\nCreating full 103-class YOLO dataset...")
 
 for split_name, indices in splits.items():
 
-    print(f"\nProcessing {split_name}...")
+    print(f"\nProcessing {split_name} split...")
 
     for counter, dataset_index in enumerate(indices):
 
@@ -164,7 +157,6 @@ for split_name, indices in splits.items():
 
             yolo_annotations.append(annotation)
 
-        # Skip if this image somehow has no selected objects
         if not yolo_annotations:
             continue
 
@@ -184,18 +176,16 @@ for split_name, indices in splits.items():
             / f"{image_name}.txt"
         )
 
-        image.save(image_path)
+        image.save(image_path, quality=90)
 
         with open(label_path, "w", encoding="utf-8") as file:
             file.write("\n".join(yolo_annotations))
 
         if (counter + 1) % 500 == 0:
-            print(
-                f"Processed {counter + 1}/{len(indices)}"
-            )
+            print(f"  Processed {counter + 1}/{len(indices)} images...")
 
 # --------------------------------------------------
-# 8. Create data.yaml
+# 8. Create data.yaml with all 103 classes
 # --------------------------------------------------
 
 yaml_path = OUTPUT_DIR / "data.yaml"
@@ -213,7 +203,7 @@ with open(yaml_path, "w", encoding="utf-8") as file:
         file.write(f"  {class_id}: {class_name}\n")
 
 print("\n--------------------------------")
-print("YOLO DATASET CREATED!")
+print("YOLO 103-CLASS DATASET CREATED!")
 print("--------------------------------")
 
 print("Location:", OUTPUT_DIR.resolve())
