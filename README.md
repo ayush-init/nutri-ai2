@@ -123,9 +123,8 @@ change.
 -   Python
 -   FastAPI
 -   Pydantic
--   SQLAlchemy
--   PostgreSQL for production
--   SQLite for local development if needed
+-   SQLAlchemy (ORM)
+-   PostgreSQL (Hosted on Neon DB) with connection pooling
 
 ## Computer Vision / ML
 

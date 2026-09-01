@@ -1,7 +1,36 @@
+# Virtual Environments
 venv/
+backend/venv/
+.venv/
+env/
+
+# Python Cache & Bytecode
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Environment Variables & Secrets (CRITICAL)
 .env
+.env.*
+backend/.env
+backend/.env.*
+!.env.example
+
+# IDEs & OS files
 .vscode/
 .idea/
+.DS_Store
+Thumbs.db
+
+# Large Datasets & Training Artifacts
 datasets/
+backend/datasets/
+runs/
+*.pt
+*.onnx
+weights/
+test_images/
+backend/data/*.jpg
+backend/data/*.png
