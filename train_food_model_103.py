@@ -28,12 +28,10 @@ def main():
         print("Please run 'python scripts/prepare_foodseg103_full.py' first.")
         sys.exit(1)
 
-    print("
-[Step 1/2] Initializing YOLO11 pretrained architecture...")
+    print("[Step 1/2] Initializing YOLO11 pretrained architecture...")
     model = YOLO("yolo11n.pt")
 
-    print("
-[Step 2/2] Launching 103-Class Food Training...")
+    print("[Step 2/2] Launching 103-Class Food Training...")
     print("  * Epochs: 40")
     print("  * Image Resolution: 640x640")
     print("  * Batch Size: 16 (optimized for GPU)")
@@ -52,11 +50,9 @@ def main():
         plots=True
     )
 
-    print("
-" + "=" * 60)
+    print("=" * 60)
     print("TRAINING COMPLETED SUCCESSFULLY!")
-    print("Best weights saved at:")
-    print("  runs/detect/foodlens_103_gpu/weights/best.pt")
+    print("Best weights saved at: runs/detect/foodlens_103_gpu/weights/best.pt")
     print("=" * 60)
 
 if __name__ == "__main__":
