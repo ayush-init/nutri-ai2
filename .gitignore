@@ -34,3 +34,7 @@ weights/
 test_images/
 backend/data/*.jpg
 backend/data/*.png
+backend/data/annotated/*
+!backend/data/annotated/.gitkeep
+backend/data/uploads/*
+!backend/data/uploads/.gitkeep

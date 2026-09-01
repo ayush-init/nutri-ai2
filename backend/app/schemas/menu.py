@@ -26,7 +26,7 @@ class MenuTextRequest(BaseModel):
     preference: str = Field("balanced", description="User preference: balanced, high_protein, low_calorie, vegetarian")
 
 class FoodComparisonRequest(BaseModel):
-    food_names: List[str] = Field(..., min_items=2, description="List of 2 or more foods to compare")
+    food_names: List[str] = Field(..., min_length=2, description="List of 2 or more foods to compare")
     preference: str = Field("balanced", description="Preference goal: balanced, high_protein, low_calorie, vegetarian")
 
 class FoodComparisonItem(BaseModel):

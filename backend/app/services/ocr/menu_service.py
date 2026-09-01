@@ -33,11 +33,11 @@ class MenuIntelligenceService:
         lines = [line.strip() for line in raw_text.splitlines() if line.strip()]
         extracted = []
         for line in lines:
-            # Strip prices (e.g. $12.99, Rs. 250, 180/-)
-            cleaned = re.sub(r"(?:rs\.?|\$|inr|usd)?\s*\d+(?:\.\d+)?(?:/-)?", "", line, flags=re.IGNORECASE)
-            # Remove numbering like 1. 2)
-            cleaned = re.sub(r"^\d+[\.\)\-:]\s*", "", cleaned)
-            cleaned = cleaned.strip(" -?*,;")
+            # First remove leading numbering like 1. 2) #3 -
+            cleaned = re.sub(r"^\s*#?\d+[\.\)\-:]\s*", "", line)
+            # Next strip prices (e.g. $12.99, Rs. 250, 180/-)
+            cleaned = re.sub(r"(?:rs\.?|\$|inr|usd)?\s*\d+(?:\.\d+)?(?:/-)?", "", cleaned, flags=re.IGNORECASE)
+            cleaned = cleaned.strip(" -•*,;.:\t")
             if len(cleaned) >= 3 and not any(kw in cleaned.lower() for kw in ["menu", "appetizer", "beverages", "desserts", "main course", "today's special"]):
                 extracted.append(cleaned)
         return extracted

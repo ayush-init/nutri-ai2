@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  foodlens-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - PROJECT_NAME=FoodLens AI
+      - ENVIRONMENT=production
+      - DATABASE_URL=postgresql://neondb_owner:npg_oBZ1O5xkpuGI@ep-muddy-bonus-axj8mnpi-pooler.c-4.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+    restart: unless-stopped
