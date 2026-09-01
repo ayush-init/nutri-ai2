@@ -3,198 +3,545 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FoodLens AI - Food Intelligence & Menu Assistant</title>
+    <title>FoodLens AI — Smart Nutrition & Menu Assistant</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5 & FontAwesome -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
     <style>
-        :root { --primary-color: #10b981; --secondary-color: #059669; --dark-bg: #0f172a; }
-        body { background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        .hero { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: white; padding: 40px 0; }
-        .card { border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        .badge-confidence-high { background-color: #10b981; color: white; }
-        .badge-confidence-medium { background-color: #f59e0b; color: white; }
-        .badge-confidence-low { background-color: #ef4444; color: white; }
-        .nav-pills .nav-link.active { background-color: #10b981; }
-        .nav-pills .nav-link { color: #475569; font-weight: 500; }
-        .macro-card { border-radius: 8px; padding: 15px; text-align: center; }
-        .calorie-box { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; }
-        .protein-box { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
-        .carb-box { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
-        .fat-box { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+        :root {
+            --bg-main: #f8fafc;
+            --surface: #ffffff;
+            --surface-subtle: #f1f5f9;
+            --border-light: #e2e8f0;
+            --primary: #10b981;
+            --primary-dark: #059669;
+            --primary-light: #ecfdf5;
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.06), 0 2px 4px -2px rgba(0,0,0,0.04);
+            --radius-md: 12px;
+            --radius-lg: 16px;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Top Navbar */
+        .navbar-custom {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border-light);
+            box-shadow: var(--shadow-sm);
+        }
+        .brand-logo {
+            background: linear-gradient(135deg, var(--primary) 0%, #047857 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        /* Navigation Tabs */
+        .nav-pills-custom {
+            background: var(--surface);
+            padding: 6px;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-light);
+            box-shadow: var(--shadow-sm);
+        }
+        .nav-pills-custom .nav-link {
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.92rem;
+            padding: 10px 18px;
+            border-radius: var(--radius-md);
+            transition: all 0.2s ease;
+        }
+        .nav-pills-custom .nav-link:hover {
+            color: var(--text-primary);
+            background: var(--surface-subtle);
+        }
+        .nav-pills-custom .nav-link.active {
+            color: #ffffff;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+        }
+
+        /* Cards */
+        .card-custom {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-light);
+            box-shadow: var(--shadow-md);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        /* Upload Zone */
+        .dropzone-box {
+            border: 2px dashed #cbd5e1;
+            border-radius: var(--radius-lg);
+            background: #f8fafc;
+            padding: 28px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .dropzone-box:hover, .dropzone-box.dragover {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        /* Macro Metric Cards */
+        .macro-stat-box {
+            border-radius: var(--radius-md);
+            padding: 14px 16px;
+            text-align: left;
+        }
+        .macro-stat-box .title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        .macro-stat-box .value { font-size: 1.45rem; font-weight: 800; line-height: 1.2; margin-top: 4px; }
+        .macro-stat-box .sub { font-size: 0.75rem; margin-top: 2px; }
+
+        .stat-cal { background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; }
+        .stat-prot { background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; }
+        .stat-carb { background: #fffbeb; border: 1px solid #fde68a; color: #b45309; }
+        .stat-fat { background: #fff1f2; border: 1px solid #fecdd3; color: #be123c; }
+
+        /* Confidence Badges */
+        .badge-conf-high { background: #dcfce7; color: #15803d; font-weight: 600; }
+        .badge-conf-med { background: #fef3c7; color: #b45309; font-weight: 600; }
+
+        /* Buttons */
+        .btn-primary-gradient {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border: none;
+            color: white;
+            font-weight: 600;
+            padding: 10px 20px;
+            border-radius: var(--radius-md);
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+        }
+        .btn-primary-gradient:hover {
+            opacity: 0.95;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
+            color: white;
+        }
+
+        /* Preset Chips */
+        .preset-chip {
+            background: var(--surface-subtle);
+            border: 1px solid var(--border-light);
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .preset-chip:hover {
+            background: var(--primary-light);
+            border-color: var(--primary);
+            color: var(--primary-dark);
+        }
+
+        /* Pulse live indicator */
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--primary);
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            animation: pulse-green 2s infinite;
+        }
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        .loading-spinner { display: none; }
     </style>
 </head>
 <body>
 
-<div class="hero mb-4">
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-custom sticky-top py-3">
     <div class="container">
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-                <h1 class="fw-bold mb-1"><i class="fa-solid fa-utensils text-success me-2"></i>FoodLens AI</h1>
-                <p class="text-secondary mb-0">AI Food Intelligence, OCR Nutrition Scanner & Menu Recommender</p>
+        <a class="navbar-brand d-flex align-items-center gap-2" href="#">
+            <div class="rounded-3 p-2 d-flex align-items-center justify-content-center" style="width:38px; height:38px; background:#d1fae5;">
+                <i class="fa-solid fa-utensils text-success fs-5"></i>
             </div>
-            <div>
-                <span class="badge bg-dark border border-secondary px-3 py-2"><i class="fa-solid fa-database text-success me-1"></i> Neon PostgreSQL Connected</span>
-                <a href="/docs" target="_blank" class="btn btn-sm btn-outline-light ms-2"><i class="fa-solid fa-book-open me-1"></i> API Docs</a>
+            <span class="brand-logo fs-4">FoodLens AI</span>
+        </a>
+        <div class="d-flex align-items-center gap-3">
+            <div class="d-none d-md-flex align-items-center gap-2 bg-light px-3 py-1 rounded-pill border" id="neonHealthBadge">
+                <span class="live-dot"></span>
+                <span class="small fw-semibold text-secondary" id="healthStatusText">Neon PostgreSQL Connected</span>
             </div>
+            <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-semibold" onclick="openFoodCatalogModal()">
+                <i class="fa-solid fa-apple-whole text-success me-1"></i> 15 Food Classes
+            </button>
+            <a href="/docs" target="_blank" class="btn btn-sm btn-dark rounded-pill px-3 fw-semibold">
+                <i class="fa-solid fa-code me-1"></i> Swagger API
+            </a>
         </div>
     </div>
-</div>
+</nav>
 
-<div class="container mb-5">
-    <ul class="nav nav-pills nav-fill mb-4 p-2 bg-white rounded-3 shadow-sm" id="pills-tab" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="pills-photo-tab" data-bs-toggle="pill" data-bs-target="#pills-photo" type="button"><i class="fa-solid fa-camera me-1"></i> 1. Photo Analysis (YOLO)</button>
+<!-- Main Container -->
+<div class="container py-4">
+
+    <!-- Top Navigation Pills -->
+    <ul class="nav nav-pills nav-fill nav-pills-custom mb-4" id="mainTab" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active" id="tab-photo-btn" data-bs-toggle="pill" data-bs-target="#tab-photo" type="button">
+                <i class="fa-solid fa-camera me-1"></i> 1. Photo Analysis (YOLO)
+            </button>
         </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="pills-package-tab" data-bs-toggle="pill" data-bs-target="#pills-package" type="button"><i class="fa-solid fa-barcode me-1"></i> 2. Package Label OCR</button>
+        <li class="nav-item">
+            <button class="nav-link" id="tab-package-btn" data-bs-toggle="pill" data-bs-target="#tab-package" type="button">
+                <i class="fa-solid fa-barcode me-1"></i> 2. Package Label OCR
+            </button>
         </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="pills-menu-tab" data-bs-toggle="pill" data-bs-target="#pills-menu" type="button"><i class="fa-solid fa-clipboard-list me-1"></i> 3. Menu Intelligence</button>
+        <li class="nav-item">
+            <button class="nav-link" id="tab-menu-btn" data-bs-toggle="pill" data-bs-target="#tab-menu" type="button">
+                <i class="fa-solid fa-clipboard-list me-1"></i> 3. Menu Intelligence
+            </button>
         </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="pills-compare-tab" data-bs-toggle="pill" data-bs-target="#pills-compare" type="button"><i class="fa-solid fa-scale-balanced me-1"></i> 4. Food Comparison</button>
+        <li class="nav-item">
+            <button class="nav-link" id="tab-compare-btn" data-bs-toggle="pill" data-bs-target="#tab-compare" type="button">
+                <i class="fa-solid fa-scale-balanced me-1"></i> 4. Food Comparison
+            </button>
         </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="pills-history-tab" data-bs-toggle="pill" data-bs-target="#pills-history" type="button"><i class="fa-solid fa-clock-rotate-left me-1"></i> 5. Neon DB History</button>
+        <li class="nav-item">
+            <button class="nav-link" id="tab-history-btn" data-bs-toggle="pill" data-bs-target="#tab-history" type="button">
+                <i class="fa-solid fa-database me-1"></i> 5. Neon DB History
+            </button>
         </li>
     </ul>
 
-    <div class="tab-content" id="pills-tabContent">
-        
-        <!-- Tab 1: Food Photo Analysis -->
-        <div class="tab-pane fade show active" id="pills-photo" role="tabpanel">
-            <div class="row">
-                <div class="col-md-5">
-                    <div class="card p-4">
-                        <h5 class="fw-bold mb-3"><i class="fa-solid fa-upload me-2 text-primary"></i>Upload Food Photo</h5>
-                        <p class="text-muted small">Upload an image of a dish (e.g. rice, chicken, broccoli, tomato, salad).</p>
+    <!-- Tabs Content -->
+    <div class="tab-content" id="mainTabContent">
+
+        <!-- TAB 1: FOOD PHOTO ANALYSIS -->
+        <div class="tab-pane fade show active" id="tab-photo" role="tabpanel">
+            <div class="row g-4">
+                <div class="col-lg-5">
+                    <div class="card card-custom p-4 h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-bold mb-0"><i class="fa-solid fa-cloud-arrow-up text-success me-2"></i>Analyze Food Photo</h5>
+                            <span class="badge bg-light text-secondary border">YOLO11</span>
+                        </div>
+                        <p class="text-secondary small mb-3">Upload a meal photo to detect food items, bounding boxes, and estimated calorie/macro ranges.</p>
+                        
                         <div class="mb-3">
-                            <input class="form-control" type="file" id="foodFileInput" accept="image/*">
+                            <label class="small text-muted fw-bold d-block mb-2">QUICK TEST PRESET:</label>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <span class="preset-chip" onclick="loadSampleImage()"><i class="fa-solid fa-bowl-rice text-success"></i> Sample Meal (Rice+Broccoli+Chicken)</span>
+                            </div>
                         </div>
+
+                        <div class="dropzone-box mb-3" id="photoDropzone" onclick="document.getElementById('photoInput').click()">
+                            <input type="file" id="photoInput" accept="image/*" class="d-none" onchange="handleFileSelect(event)">
+                            <div id="dropzoneContent">
+                                <i class="fa-solid fa-images fs-1 text-secondary mb-2"></i>
+                                <div class="fw-semibold">Click to select photo or drag & drop</div>
+                                <div class="small text-muted mt-1">JPEG, PNG, WEBP (Max 10MB)</div>
+                            </div>
+                            <img id="previewThumb" class="img-fluid rounded-3 mt-2 d-none" style="max-height: 180px;" alt="Selected Meal">
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between small fw-bold mb-1">
+                                <span>Detection Confidence Threshold</span>
+                                <span class="text-success" id="confDisplay">0.25</span>
+                            </div>
+                            <input type="range" class="form-range" id="confSlider" min="0.10" max="0.90" step="0.05" value="0.25" oninput="document.getElementById('confDisplay').innerText=this.value">
+                        </div>
+
+                        <button class="btn btn-primary-gradient w-100 py-2 d-flex align-items-center justify-content-center gap-2" id="analyzeBtn" onclick="runFoodAnalysis()">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                            <span id="analyzeBtnText">Analyze Food Nutrition</span>
+                            <div class="spinner-border spinner-border-sm text-light loading-spinner" id="photoSpinner" role="status"></div>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="col-lg-7">
+                    <div class="card card-custom p-4 h-100" id="photoResultPlaceholder">
+                        <div class="text-center py-5 text-secondary">
+                            <i class="fa-solid fa-chart-pie fs-1 mb-3 text-muted"></i>
+                            <h5 class="fw-bold">No Image Analyzed Yet</h5>
+                            <p class="small text-muted max-w-sm mx-auto">Upload an image or click the "Sample Meal" preset on the left to see YOLO detections, bounding boxes, portion multipliers, and nutritional charts.</p>
+                        </div>
+                    </div>
+
+                    <div class="card card-custom p-4 d-none" id="photoResultContainer">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-bold mb-0 text-success"><i class="fa-solid fa-circle-check me-2"></i>Meal Nutrition Summary</h5>
+                            <span class="badge bg-light text-muted border" id="latencyBadge">120ms</span>
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-6 col-md-3">
+                                <div class="macro-stat-box stat-cal">
+                                    <div class="title">Total Calories</div>
+                                    <div class="value" id="cardCal">-</div>
+                                    <div class="sub" id="cardCalRange">-</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="macro-stat-box stat-prot">
+                                    <div class="title">Protein</div>
+                                    <div class="value" id="cardProt">-</div>
+                                    <div class="sub" id="cardProtRange">-</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="macro-stat-box stat-carb">
+                                    <div class="title">Carbohydrates</div>
+                                    <div class="value" id="cardCarb">-</div>
+                                    <div class="sub" id="cardCarbRange">-</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="macro-stat-box stat-fat">
+                                    <div class="title">Total Fat</div>
+                                    <div class="value" id="cardFat">-</div>
+                                    <div class="sub" id="cardFatRange">-</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-7 text-center">
+                                <div class="position-relative border rounded-3 overflow-hidden bg-light">
+                                    <img id="annotatedImageResult" class="img-fluid" style="max-height: 260px; object-fit: contain;" src="" alt="Detections">
+                                </div>
+                            </div>
+                            <div class="col-md-5 d-flex flex-column align-items-center justify-content-center bg-light rounded-3 p-3 border">
+                                <span class="small fw-bold text-secondary mb-2">MACRONUTRIENT RATIO</span>
+                                <div style="height: 140px; width: 140px;">
+                                    <canvas id="macroDonutChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h6 class="fw-bold mb-2"><i class="fa-solid fa-list-check text-primary me-2"></i>Detected Items & Portions</h6>
+                        <div class="table-responsive mb-3">
+                            <table class="table table-sm align-middle">
+                                <thead class="table-light">
+                                    <tr class="small text-secondary">
+                                        <th>Food Item</th>
+                                        <th>Portion Size</th>
+                                        <th>Calories</th>
+                                        <th>Macros (P/C/F)</th>
+                                        <th>Confidence</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="detectedItemsTableBody"></tbody>
+                            </table>
+                        </div>
+
+                        <div class="alert alert-warning d-flex align-items-center gap-2 p-2 mb-0 small" role="alert">
+                            <i class="fa-solid fa-triangle-exclamation text-warning fs-5"></i>
+                            <div id="disclaimerMsg">Estimates are derived from visual detection and standard portion assumptions. Not intended as medical or laboratory measurements.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: PACKAGED FOOD OCR -->
+        <div class="tab-pane fade" id="tab-package" role="tabpanel">
+            <div class="row g-4">
+                <div class="col-lg-5">
+                    <div class="card card-custom p-4 h-100">
+                        <h5 class="fw-bold mb-2"><i class="fa-solid fa-barcode text-primary me-2"></i>Scan Nutrition Panel</h5>
+                        <p class="text-secondary small mb-3">Reads Nutrition Facts, Ingredients, and Allergen declarations using non-hallucinated OCR extraction.</p>
+
                         <div class="mb-3">
-                            <label class="form-label small fw-bold">Confidence Threshold: <span id="confVal">0.25</span></label>
-                            <input type="range" class="form-range" id="confRange" min="0.10" max="0.90" step="0.05" value="0.25" oninput="document.getElementById('confVal').innerText=this.value">
+                            <label class="small text-muted fw-bold d-block mb-2">SAMPLE PACKAGES:</label>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <span class="preset-chip" onclick="loadPackagePreset('protein_bar')">🍫 Protein Bar</span>
+                                <span class="preset-chip" onclick="loadPackagePreset('oat_milk')">🥛 Almond Milk</span>
+                                <span class="preset-chip" onclick="loadPackagePreset('cereal')">🥣 Multigrain Cereal</span>
+                            </div>
                         </div>
-                        <button class="btn btn-success w-100 py-2 fw-bold" onclick="analyzeFoodPhoto()"><i class="fa-solid fa-wand-magic-sparkles me-1"></i> Analyze Nutrition</button>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Package Text / OCR Buffer:</label>
+                            <textarea class="form-control" id="packageInputText" rows="8" style="font-family: monospace; font-size: 0.88rem;"></textarea>
+                        </div>
+
+                        <button class="btn btn-primary-gradient w-100 py-2 d-flex align-items-center justify-content-center gap-2" onclick="runPackageAnalysis()">
+                            <i class="fa-solid fa-magnifying-glass-chart"></i> Parse Nutrition Facts
+                        </button>
                     </div>
                 </div>
-                <div class="col-md-7">
-                    <div class="card p-4" id="photoResultCard" style="display:none;">
-                        <h5 class="fw-bold mb-3"><i class="fa-solid fa-chart-pie me-2 text-success"></i>Nutritional Estimation</h5>
-                        <div class="row g-2 mb-3">
-                            <div class="col-3"><div class="macro-card calorie-box"><div class="small fw-bold">CALORIES</div><h4 class="mb-0 fw-bold" id="resCal">-</h4><div class="small text-muted" id="resCalRange">-</div></div></div>
-                            <div class="col-3"><div class="macro-card protein-box"><div class="small fw-bold">PROTEIN</div><h4 class="mb-0 fw-bold" id="resProt">-</h4><div class="small text-muted">grams</div></div></div>
-                            <div class="col-3"><div class="macro-card carb-box"><div class="small fw-bold">CARBS</div><h4 class="mb-0 fw-bold" id="resCarb">-</h4><div class="small text-muted">grams</div></div></div>
-                            <div class="col-3"><div class="macro-card fat-box"><div class="small fw-bold">FAT</div><h4 class="mb-0 fw-bold" id="resFat">-</h4><div class="small text-muted">grams</div></div></div>
+
+                <div class="col-lg-7">
+                    <div class="card card-custom p-4 h-100" id="packageResultContainer">
+                        <h5 class="fw-bold mb-3 text-success"><i class="fa-solid fa-receipt me-2"></i>Nutrition Facts Breakdown</h5>
+                        <div id="packageResultBody">
+                            <div class="text-center py-5 text-secondary">
+                                <i class="fa-solid fa-file-lines fs-1 mb-3 text-muted"></i>
+                                <h6 class="fw-bold">Select a preset or paste label text on the left.</h6>
+                            </div>
                         </div>
-                        <div class="text-center mb-3">
-                            <img id="annotatedImg" class="img-fluid rounded border" style="max-height: 280px;" src="" alt="Annotated Detections">
-                        </div>
-                        <h6 class="fw-bold">Detected Food Items:</h6>
-                        <ul class="list-group list-group-flush mb-2" id="detectedList"></ul>
-                        <div class="alert alert-warning small mb-0 py-2" id="disclaimerText"></div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Tab 2: Package Label OCR -->
-        <div class="tab-pane fade" id="pills-package" role="tabpanel">
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="card p-4">
-                        <h5 class="fw-bold mb-3"><i class="fa-solid fa-file-lines me-2 text-primary"></i>Nutrition Facts Label Text</h5>
-                        <p class="text-muted small">Paste or scan nutrition panel facts:</p>
-                        <textarea class="form-control mb-3" id="packageText" rows="7">Nutrition Facts
-Serving Size 1 protein bar (60g)
-Calories 210
-Total Fat 8g
-Total Carbohydrate 22g
-Total Sugars 7g
-Protein 12g
-Sodium 140mg
-Ingredients: Rolled oats, whey protein isolate, almond butter, honey.
-Contains: Almonds, Milk.</textarea>
-                        <button class="btn btn-success w-100 py-2 fw-bold" onclick="analyzePackageText()"><i class="fa-solid fa-barcode me-1"></i> Parse Nutrition Facts</button>
+        <!-- TAB 3: MENU INTELLIGENCE -->
+        <div class="tab-pane fade" id="tab-menu" role="tabpanel">
+            <div class="row g-4">
+                <div class="col-lg-5">
+                    <div class="card card-custom p-4 h-100">
+                        <h5 class="fw-bold mb-2"><i class="fa-solid fa-utensils text-primary me-2"></i>Menu Parser & Recommender</h5>
+                        <p class="text-secondary small mb-3">Paste a restaurant or canteen menu to rank dishes based on your specific dietary preferences.</p>
+
+                        <div class="mb-3">
+                            <label class="small text-muted fw-bold d-block mb-2">SAMPLE MENUS:</label>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <span class="preset-chip" onclick="loadMenuPreset('indian')">🍛 Indian Restaurant</span>
+                                <span class="preset-chip" onclick="loadMenuPreset('cafe')">🥗 Healthy Salad Cafe</span>
+                                <span class="preset-chip" onclick="loadMenuPreset('diner')">🍔 Fast Food Diner</span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Menu Text:</label>
+                            <textarea class="form-control" id="menuTextInput" rows="6"></textarea>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label small fw-bold">Select Dietary Goal:</label>
+                            <select class="form-select" id="menuPreferenceSelect">
+                                <option value="balanced" selected>⚖️ Balanced Nutrition</option>
+                                <option value="high_protein">💪 High Protein Focus</option>
+                                <option value="low_calorie">🔥 Low Calorie & Fat</option>
+                                <option value="vegetarian">🌿 100% Vegetarian Options</option>
+                            </select>
+                        </div>
+
+                        <button class="btn btn-primary-gradient w-100 py-2 d-flex align-items-center justify-content-center gap-2" onclick="runMenuRecommendation()">
+                            <i class="fa-solid fa-star"></i> Recommend Best Dishes
+                        </button>
                     </div>
                 </div>
-                <div class="col-md-6">
-                    <div class="card p-4" id="packageResultCard" style="display:none;">
-                        <h5 class="fw-bold mb-3"><i class="fa-solid fa-list-check me-2 text-success"></i>Parsed Package Facts</h5>
-                        <div id="packageResultContent"></div>
+
+                <div class="col-lg-7">
+                    <div class="card card-custom p-4 h-100">
+                        <h5 class="fw-bold mb-3 text-success"><i class="fa-solid fa-award text-warning me-2"></i>Recommended Menu Dishes</h5>
+                        <div id="menuResultBody">
+                            <div class="text-center py-5 text-secondary">
+                                <i class="fa-solid fa-bowl-food fs-1 mb-3 text-muted"></i>
+                                <h6 class="fw-bold">Choose a sample menu or paste text to see personalized dish recommendations.</h6>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Tab 3: Menu Intelligence -->
-        <div class="tab-pane fade" id="pills-menu" role="tabpanel">
-            <div class="row">
-                <div class="col-md-5">
-                    <div class="card p-4">
-                        <h5 class="fw-bold mb-3"><i class="fa-solid fa-utensils me-2 text-primary"></i>Restaurant / Canteen Menu</h5>
-                        <textarea class="form-control mb-3" id="menuInput" rows="6">Today's Specials:
-1. Paneer Butter Masala - Rs. 280
-2. Dal Tadka - Rs. 160
-3. Tandoori Chicken - Rs. 320
-4. Steamed Rice - Rs. 120
-5. Roti - Rs. 20
-6. Grilled Chicken Salad - Rs. 250</textarea>
-                        <label class="form-label small fw-bold">Target Diet Goal:</label>
-                        <select class="form-select mb-3" id="menuPref">
-                            <option value="balanced" selected>Balanced Diet</option>
-                            <option value="high_protein">High Protein</option>
-                            <option value="low_calorie">Low Calorie</option>
-                            <option value="vegetarian">100% Vegetarian</option>
-                        </select>
-                        <button class="btn btn-success w-100 py-2 fw-bold" onclick="analyzeMenu()"><i class="fa-solid fa-star me-1"></i> Recommend Best Dishes</button>
+        <!-- TAB 4: FOOD COMPARISON -->
+        <div class="tab-pane fade" id="tab-compare" role="tabpanel">
+            <div class="card card-custom p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h5 class="fw-bold mb-1"><i class="fa-solid fa-scale-balanced text-primary me-2"></i>"What's the Better Choice?" Comparison</h5>
+                        <p class="text-secondary small mb-0">Compare multiple dishes side-by-side with transparent macro trade-offs and explained winners.</p>
                     </div>
                 </div>
-                <div class="col-md-7">
-                    <div class="card p-4" id="menuResultCard" style="display:none;">
-                        <h5 class="fw-bold mb-3"><i class="fa-solid fa-award me-2 text-warning"></i>Top Recommended Dishes</h5>
-                        <div id="menuResultContent"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- Tab 4: Food Comparison -->
-        <div class="tab-pane fade" id="pills-compare" role="tabpanel">
-            <div class="card p-4">
-                <h5 class="fw-bold mb-3"><i class="fa-solid fa-scale-balanced me-2 text-primary"></i>What's the Better Choice?</h5>
-                <p class="text-muted small">Enter food dishes to compare side-by-side with clear trade-offs:</p>
-                <div class="row mb-3">
+                <div class="mb-3">
+                    <label class="small text-muted fw-bold d-block mb-2">QUICK COMPARISONS:</label>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <span class="preset-chip" onclick="loadComparePreset('burger_vs_salad')">🍔 Burger vs 🥗 Grilled Salad</span>
+                        <span class="preset-chip" onclick="loadComparePreset('paneer_vs_dal')">🧀 Paneer Masala vs 🥣 Dal Tadka</span>
+                        <span class="preset-chip" onclick="loadComparePreset('biryani_vs_tandoori')">🍗 Chicken Biryani vs 🍖 Tandoori Chicken</span>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
                     <div class="col-md-8">
-                        <input class="form-control" type="text" id="compareFoodsInput" value="Cheeseburger, Grilled Chicken Salad, Dal Tadka">
+                        <label class="form-label small fw-bold">Food Items to Compare (comma-separated):</label>
+                        <input type="text" class="form-control" id="compareInputFoods" value="Cheeseburger, Grilled Chicken Salad, Dal Tadka">
                     </div>
                     <div class="col-md-4">
-                        <select class="form-select" id="comparePref">
-                            <option value="balanced">Balanced</option>
-                            <option value="high_protein">High Protein</option>
-                            <option value="low_calorie" selected>Low Calorie</option>
-                            <option value="vegetarian">Vegetarian</option>
+                        <label class="form-label small fw-bold">Target Goal:</label>
+                        <select class="form-select" id="comparePreference">
+                            <option value="low_calorie" selected>🔥 Low Calorie</option>
+                            <option value="high_protein">💪 High Protein</option>
+                            <option value="balanced">⚖️ Balanced Diet</option>
+                            <option value="vegetarian">🌿 Vegetarian</option>
                         </select>
                     </div>
                 </div>
-                <button class="btn btn-primary py-2 fw-bold" onclick="compareFoods()"><i class="fa-solid fa-magnifying-glass me-1"></i> Compare Dishes</button>
-                <div class="mt-4" id="compareResultContent"></div>
+
+                <button class="btn btn-primary-gradient py-2 px-4 mb-4" onclick="runFoodComparison()">
+                    <i class="fa-solid fa-trophy me-1"></i> Compare Foods
+                </button>
+
+                <div id="compareResultBody"></div>
             </div>
         </div>
 
-        <!-- Tab 5: Neon DB History -->
-        <div class="tab-pane fade" id="pills-history" role="tabpanel">
-            <div class="card p-4">
+        <!-- TAB 5: NEON DB HISTORY -->
+        <div class="tab-pane fade" id="tab-history" role="tabpanel">
+            <div class="card card-custom p-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="fw-bold mb-0"><i class="fa-solid fa-database text-success me-2"></i>Neon PostgreSQL History Records</h5>
-                    <button class="btn btn-sm btn-outline-secondary" onclick="loadHistory()"><i class="fa-solid fa-rotate me-1"></i> Refresh</button>
+                    <div>
+                        <h5 class="fw-bold mb-1"><i class="fa-solid fa-database text-success me-2"></i>Neon PostgreSQL History Records</h5>
+                        <p class="text-secondary small mb-0">All food photo analyses, OCR scans, and recommendations stored persistently in the cloud database.</p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <select class="form-select form-select-sm" id="historyFilterType" onchange="loadHistoryRecords()">
+                            <option value="">All Types</option>
+                            <option value="food_photo">Food Photo</option>
+                            <option value="package_ocr">Package OCR</option>
+                            <option value="menu_analysis">Menu Analysis</option>
+                            <option value="food_comparison">Food Comparison</option>
+                        </select>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="loadHistoryRecords()"><i class="fa-solid fa-rotate me-1"></i> Refresh</button>
+                    </div>
                 </div>
+
                 <div class="table-responsive">
                     <table class="table table-hover align-middle">
                         <thead class="table-light">
-                            <tr><th>ID</th><th>Type</th><th>Title</th><th>Calories</th><th>Macros (P/C/F)</th><th>Timestamp</th><th>Action</th></tr>
+                            <tr class="small text-secondary">
+                                <th>#ID</th>
+                                <th>Type</th>
+                                <th>Title / Details</th>
+                                <th>Calories</th>
+                                <th>Macros (P/C/F)</th>
+                                <th>Timestamp</th>
+                                <th>Action</th>
+                            </tr>
                         </thead>
-                        <tbody id="historyTableBody"></tbody>
+                        <tbody id="historyTableBody">
+                            <tr><td colspan="7" class="text-center py-4 text-muted">Loading records from Neon PostgreSQL...</td></tr>
+                        </tbody>
                     </table>
                 </div>
             </div>
@@ -203,172 +550,451 @@ Contains: Almonds, Milk.</textarea>
     </div>
 </div>
 
+<!-- Modal: Food Classes Catalog -->
+<div class="modal fade" id="foodCatalogModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content card-custom">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-apple-whole text-success me-2"></i>15 Supported Food Classes</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-secondary small">These 15 food classes were fine-tuned with YOLO and seeded into your Neon PostgreSQL database with baseline nutrition per 100g.</p>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead class="table-light">
+                            <tr class="small"><th>Food Class</th><th>Category</th><th>Cal (100g)</th><th>Protein</th><th>Carbs</th><th>Fat</th><th>Serving Unit</th></tr>
+                        </thead>
+                        <tbody id="catalogTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: History JSON Detail -->
+<div class="modal fade" id="historyDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content card-custom">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="historyDetailTitle">Analysis Record Detail</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <pre class="bg-light p-3 rounded-3 border small" id="historyDetailJson" style="max-height: 400px; overflow-y: auto;"></pre>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    async function analyzeFoodPhoto() {
-        const fileInput = document.getElementById('foodFileInput');
-        if (!fileInput.files[0]) {
-            alert('Please select an image first!');
+    let selectedFileBlob = null;
+    let currentDonutChart = null;
+
+    async function checkHealth() {
+        try {
+            const res = await fetch('/api/v1/health');
+            const data = await res.json();
+            if (data.status === 'healthy') {
+                document.getElementById('healthStatusText').innerText = `Neon DB Connected (${data.database.latency_ms}ms)`;
+            }
+        } catch (e) {
+            document.getElementById('healthStatusText').innerText = 'Backend Offline';
+        }
+    }
+    checkHealth();
+
+    const dropzone = document.getElementById('photoDropzone');
+    dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+    dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+        if (e.dataTransfer.files.length) {
+            setFile(e.dataTransfer.files[0]);
+        }
+    });
+
+    function handleFileSelect(e) {
+        if (e.target.files.length) {
+            setFile(e.target.files[0]);
+        }
+    }
+
+    function setFile(file) {
+        selectedFileBlob = file;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const preview = document.getElementById('previewThumb');
+            preview.src = e.target.result;
+            preview.classList.remove('d-none');
+            document.getElementById('dropzoneContent').classList.add('d-none');
+        };
+        reader.readAsDataURL(file);
+    }
+
+    async function loadSampleImage() {
+        try {
+            const res = await fetch('/static/sample_food.png');
+            const blob = await res.blob();
+            const file = new File([blob], "sample_meal.png", { type: "image/png" });
+            setFile(file);
+        } catch (e) {
+            alert('Failed to load sample image: ' + e);
+        }
+    }
+
+    async function runFoodAnalysis() {
+        if (!selectedFileBlob) {
+            alert('Please select an image first or click "Sample Meal" preset.');
             return;
         }
+
+        const btn = document.getElementById('analyzeBtn');
+        const spinner = document.getElementById('photoSpinner');
+        btn.disabled = true;
+        spinner.style.display = 'inline-block';
+
+        const conf = document.getElementById('confSlider').value;
         const formData = new FormData();
-        formData.append('file', fileInput.files[0]);
-        const conf = document.getElementById('confRange').value;
+        formData.append('file', selectedFileBlob);
 
         try {
             const res = await fetch(`/api/v1/food/analyze?conf_threshold=${conf}`, { method: 'POST', body: formData });
             const data = await res.json();
-            
-            document.getElementById('photoResultCard').style.display = 'block';
-            document.getElementById('resCal').innerText = `${data.total_calories.avg_kcal} kcal`;
-            document.getElementById('resCalRange').innerText = `${data.total_calories.min_kcal} - ${data.total_calories.max_kcal}`;
-            document.getElementById('resProt').innerText = `${data.total_protein.avg_val}g`;
-            document.getElementById('resCarb').innerText = `${data.total_carbs.avg_val}g`;
-            document.getElementById('resFat').innerText = `${data.total_fat.avg_val}g`;
-            document.getElementById('annotatedImg').src = data.annotated_image_url;
-            document.getElementById('disclaimerText').innerText = data.disclaimer;
 
-            const list = document.getElementById('detectedList');
-            list.innerHTML = data.detected_items.map(i => `
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <div>
-                        <strong>${i.display_name}</strong> <span class="badge ${i.confidence_level === 'high' ? 'badge-confidence-high' : 'badge-confidence-medium'} ms-1">${Math.round(i.confidence*100)}%</span>
-                        <div class="small text-muted">${i.serving_count} x ${i.serving_name} (${i.serving_grams}g)</div>
-                    </div>
-                    <div class="text-end">
-                        <span class="fw-bold">${i.calories.avg_kcal} kcal</span>
-                        <div class="small text-muted">P: ${i.protein.avg_val}g | C: ${i.carbs.avg_val}g | F: ${i.fat.avg_val}g</div>
-                    </div>
-                </li>
+            document.getElementById('photoResultPlaceholder').classList.add('d-none');
+            document.getElementById('photoResultContainer').classList.remove('d-none');
+
+            document.getElementById('cardCal').innerText = `${data.total_calories.avg_kcal} kcal`;
+            document.getElementById('cardCalRange').innerText = `${data.total_calories.min_kcal} - ${data.total_calories.max_kcal}`;
+            document.getElementById('cardProt').innerText = `${data.total_protein.avg_val}g`;
+            document.getElementById('cardProtRange').innerText = `${data.total_protein.min_val} - ${data.total_protein.max_val}g`;
+            document.getElementById('cardCarb').innerText = `${data.total_carbs.avg_val}g`;
+            document.getElementById('cardCarbRange').innerText = `${data.total_carbs.min_val} - ${data.total_carbs.max_val}g`;
+            document.getElementById('cardFat').innerText = `${data.total_fat.avg_val}g`;
+            document.getElementById('cardFatRange').innerText = `${data.total_fat.min_val} - ${data.total_fat.max_val}g`;
+
+            document.getElementById('latencyBadge').innerText = `${data.processing_time_ms}ms`;
+            document.getElementById('annotatedImageResult').src = data.annotated_image_url;
+            document.getElementById('disclaimerMsg').innerText = data.disclaimer;
+
+            const tbody = document.getElementById('detectedItemsTableBody');
+            tbody.innerHTML = data.detected_items.map(item => `
+                <tr>
+                    <td>
+                        <strong>${item.display_name}</strong>
+                        <div class="small text-muted">${item.is_vegetarian ? '🌿 Vegetarian' : '🍗 Non-Vegetarian'}</div>
+                    </td>
+                    <td>
+                        <span class="badge bg-light text-dark border">${item.serving_count} x ${item.serving_name}</span>
+                        <div class="small text-muted">${item.serving_grams * item.serving_count}g</div>
+                    </td>
+                    <td><strong class="text-success">${item.calories.avg_kcal}</strong> <small class="text-muted">kcal</small></td>
+                    <td><small>P: ${item.protein.avg_val}g | C: ${item.carbs.avg_val}g | F: ${item.fat.avg_val}g</small></td>
+                    <td>
+                        <span class="badge ${item.confidence_level === 'high' ? 'badge-conf-high' : 'badge-conf-med'}">
+                            ${Math.round(item.confidence * 100)}%
+                        </span>
+                    </td>
+                </tr>
             `).join('');
+
+            renderMacroChart(data.total_protein.avg_val, data.total_carbs.avg_val, data.total_fat.avg_val);
+
         } catch (e) {
-            alert('Analysis failed: ' + e);
+            alert('Analysis error: ' + e);
+        } finally {
+            btn.disabled = false;
+            spinner.style.display = 'none';
         }
     }
 
-    async function analyzePackageText() {
-        const text = document.getElementById('packageText').value;
+    function renderMacroChart(prot, carbs, fat) {
+        const ctx = document.getElementById('macroDonutChart').getContext('2d');
+        if (currentDonutChart) {
+            currentDonutChart.destroy();
+        }
+        currentDonutChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Protein', 'Carbs', 'Fat'],
+                datasets: [{
+                    data: [prot * 4, carbs * 4, fat * 9],
+                    backgroundColor: ['#3b82f6', '#f59e0b', '#f43f5e'],
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                cutout: '70%'
+            }
+        });
+    }
+
+    const PACKAGE_PRESETS = {
+        protein_bar: "Nutrition Facts\nServing Size 1 protein bar (60g)\nCalories 210\nTotal Fat 8g\nTotal Carbohydrate 22g\nTotal Sugars 7g\nProtein 12g\nSodium 140mg\nIngredients: Rolled oats, whey protein isolate, almond butter, honey, sea salt.\nContains: Almonds, Milk.",
+        oat_milk: "Nutrition Facts\nServing Size 1 cup (240ml)\nCalories 120\nTotal Fat 5g\nTotal Carbohydrate 16g\nTotal Sugars 4g\nProtein 3g\nSodium 100mg\nIngredients: Oat base (water, oats), sunflower oil, dipotassium phosphate, calcium carbonate, sea salt.\nContains: Gluten.",
+        cereal: "Nutrition Facts\nServing Size 1 cup (45g)\nCalories 160\nTotal Fat 2.5g\nTotal Carbohydrate 34g\nTotal Sugars 9g\nProtein 4g\nSodium 190mg\nIngredients: Whole grain wheat, corn meal, canola oil, sugar, molasses, salt.\nContains: Wheat."
+    };
+
+    function loadPackagePreset(key) {
+        document.getElementById('packageInputText').value = PACKAGE_PRESETS[key].replace(/\\n/g, '\n');
+        runPackageAnalysis();
+    }
+
+    async function runPackageAnalysis() {
+        const text = document.getElementById('packageInputText').value;
+        if (!text.trim()) {
+            alert('Please enter or select package label text.');
+            return;
+        }
         const formData = new FormData();
         formData.append('label_text', text);
 
-        const res = await fetch('/api/v1/package/analyze-text', { method: 'POST', body: formData });
-        const data = await res.json();
+        try {
+            const res = await fetch('/api/v1/package/analyze-text', { method: 'POST', body: formData });
+            const data = await res.json();
 
-        document.getElementById('packageResultCard').style.display = 'block';
-        document.getElementById('packageResultContent').innerHTML = `
-            <div class="alert alert-success">
-                <h6 class="fw-bold mb-1">${data.product_name}</h6>
-                <div class="small">Source: ${data.source}</div>
-            </div>
-            <table class="table table-bordered mb-3">
-                <tr><th>Calories</th><td><strong>${data.calories.value ?? 'N/A'} kcal</strong></td></tr>
-                <tr><th>Protein</th><td>${data.protein.value ?? 'N/A'} g</td></tr>
-                <tr><th>Carbohydrates</th><td>${data.carbohydrates.value ?? 'N/A'} g</td></tr>
-                <tr><th>Total Fat</th><td>${data.fat.value ?? 'N/A'} g</td></tr>
-                <tr><th>Sugar</th><td>${data.sugar ? data.sugar.value + ' g' : 'Not listed'}</td></tr>
-                <tr><th>Sodium</th><td>${data.sodium ? data.sodium.value + ' mg' : 'Not listed'}</td></tr>
-            </table>
-            <h6>Ingredients:</h6>
-            <p class="small text-muted">${data.ingredients.join(', ') || 'None listed'}</p>
-            <h6>Allergens:</h6>
-            <p class="small text-danger">${data.allergens.join(', ') || 'None detected'}</p>
-        `;
+            const body = document.getElementById('packageResultBody');
+            body.innerHTML = `
+                <div class="row g-3 mb-3">
+                    <div class="col-3"><div class="macro-stat-box stat-cal"><div class="title">Calories</div><div class="value">${data.calories.value ?? 'N/A'}</div><div class="sub">kcal / serving</div></div></div>
+                    <div class="col-3"><div class="macro-stat-box stat-prot"><div class="title">Protein</div><div class="value">${data.protein.value ?? 'N/A'}g</div><div class="sub">confirmed</div></div></div>
+                    <div class="col-3"><div class="macro-stat-box stat-carb"><div class="title">Carbs</div><div class="value">${data.carbohydrates.value ?? 'N/A'}g</div><div class="sub">${data.sugar ? data.sugar.value + 'g sugar' : ''}</div></div></div>
+                    <div class="col-3"><div class="macro-stat-box stat-fat"><div class="title">Total Fat</div><div class="value">${data.fat.value ?? 'N/A'}g</div><div class="sub">${data.sodium ? data.sodium.value + 'mg sodium' : ''}</div></div></div>
+                </div>
+
+                <div class="border rounded-3 p-3 bg-light mb-3">
+                    <h6 class="fw-bold mb-1"><i class="fa-solid fa-leaf text-success me-2"></i>Ingredients:</h6>
+                    <p class="small text-secondary mb-0">${data.ingredients.length ? data.ingredients.join(' • ') : 'None listed'}</p>
+                </div>
+
+                <div class="border rounded-3 p-3 bg-light mb-3">
+                    <h6 class="fw-bold mb-1"><i class="fa-solid fa-triangle-exclamation text-danger me-2"></i>Allergens Detected:</h6>
+                    <div>${data.allergens.length ? data.allergens.map(a => '<span class="badge bg-danger-subtle text-danger border border-danger-subtle me-1">' + a + '</span>').join('') : '<span class="text-success small fw-semibold">No major allergens declared</span>'}</div>
+                </div>
+
+                <div class="alert alert-info py-2 small mb-0">
+                    <i class="fa-solid fa-circle-info me-1"></i> Source: <strong>${data.source}</strong> (Processed in ${data.processing_time_ms}ms)
+                </div>
+            `;
+        } catch (e) {
+            alert('Package analysis failed: ' + e);
+        }
     }
 
-    async function analyzeMenu() {
-        const text = document.getElementById('menuInput').value;
-        const pref = document.getElementById('menuPref').value;
+    const MENU_PRESETS = {
+        indian: "1. Paneer Butter Masala - Rs. 280\n2. Dal Tadka - Rs. 160\n3. Tandoori Chicken - Rs. 320\n4. Steamed Rice - Rs. 120\n5. Roti - Rs. 20\n6. Chole Bhature - Rs. 200",
+        cafe: "1. Grilled Chicken Salad - $12.50\n2. Caesar Salad - $10.00\n3. Steamed Rice Bowl - $7.00\n4. Veg Biryani - $11.00",
+        diner: "1. Cheeseburger - $8.99\n2. Pizza Slice - $4.50\n3. Grilled Chicken Salad - $9.99\n4. Roti with Lentils - $6.50"
+    };
 
-        const res = await fetch('/api/v1/menu/recommend', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ menu_text: text, preference: pref })
-        });
-        const data = await res.json();
+    function loadMenuPreset(key) {
+        document.getElementById('menuTextInput').value = MENU_PRESETS[key].replace(/\\n/g, '\n');
+        runMenuRecommendation();
+    }
 
-        document.getElementById('menuResultCard').style.display = 'block';
-        document.getElementById('menuResultContent').innerHTML = `
-            <p class="small text-muted">${data.explanation}</p>
-            <div class="list-group mb-3">
-                ${data.top_recommendations.map((item, idx) => `
-                    <div class="list-group-item list-group-item-action">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h6 class="mb-1 fw-bold text-success">#${idx+1} ${item.name}</h6>
-                            <span class="badge bg-success">${item.estimated_calories} kcal</span>
+    async function runMenuRecommendation() {
+        const text = document.getElementById('menuTextInput').value;
+        const pref = document.getElementById('menuPreferenceSelect').value;
+        if (!text.trim()) {
+            alert('Please paste or select a sample menu.');
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/v1/menu/recommend', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ menu_text: text, preference: pref })
+            });
+            const data = await res.json();
+
+            const body = document.getElementById('menuResultBody');
+            body.innerHTML = `
+                <p class="small text-secondary mb-3">${data.explanation}</p>
+                <div class="list-group gap-2">
+                    ${data.top_recommendations.map((item, idx) => `
+                        <div class="list-group-item card-custom border p-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="fw-bold fs-6 text-success">#${idx+1} ${item.name}</span>
+                                <span class="badge bg-success-subtle text-success fs-6">${item.estimated_calories} kcal</span>
+                            </div>
+                            <p class="small text-secondary mb-2">${item.recommendation_reason}</p>
+                            <div class="d-flex gap-2 align-items-center small">
+                                <span class="badge bg-light text-dark border">P: ${item.protein_g}g</span>
+                                <span class="badge bg-light text-dark border">C: ${item.carbs_g}g</span>
+                                <span class="badge bg-light text-dark border">F: ${item.fat_g}g</span>
+                                <span class="badge ${item.is_vegetarian ? 'bg-success-subtle text-success' : 'bg-primary-subtle text-primary'}">${item.is_vegetarian ? '🌿 Vegetarian' : '🍗 Non-Veg'}</span>
+                            </div>
                         </div>
-                        <p class="mb-1 small">${item.recommendation_reason}</p>
-                        <small class="text-muted">P: ${item.protein_g}g | C: ${item.carbs_g}g | F: ${item.fat_g}g | ${item.is_vegetarian ? '?? Veg' : '?? Non-Veg'}</small>
-                    </div>
-                `).join('')}
-            </div>
-        `;
+                    `).join('')}
+                </div>
+            `;
+        } catch (e) {
+            alert('Menu recommendation failed: ' + e);
+        }
     }
 
-    async function compareFoods() {
-        const input = document.getElementById('compareFoodsInput').value;
+    const COMPARE_PRESETS = {
+        burger_vs_salad: "Cheeseburger, Grilled Chicken Salad",
+        paneer_vs_dal: "Paneer Butter Masala, Dal Tadka",
+        biryani_vs_tandoori: "Chicken Biryani, Tandoori Chicken"
+    };
+
+    function loadComparePreset(key) {
+        document.getElementById('compareInputFoods').value = COMPARE_PRESETS[key];
+        runFoodComparison();
+    }
+
+    async function runFoodComparison() {
+        const input = document.getElementById('compareInputFoods').value;
         const foods = input.split(',').map(s => s.trim()).filter(s => s.length > 0);
-        const pref = document.getElementById('comparePref').value;
+        const pref = document.getElementById('comparePreference').value;
 
-        const res = await fetch('/api/v1/menu/compare', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ food_names: foods, preference: pref })
-        });
-        const data = await res.json();
+        try {
+            const res = await fetch('/api/v1/menu/compare', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ food_names: foods, preference: pref })
+            });
+            const data = await res.json();
 
-        document.getElementById('compareResultContent').innerHTML = `
-            <div class="alert alert-success">
-                <h5 class="fw-bold"><i class="fa-solid fa-trophy me-2"></i>Winner: ${data.winner}</h5>
-                <p class="mb-0 small">${data.summary_reason}</p>
-            </div>
-            <div class="table-responsive">
-                <table class="table table-bordered">
-                    <thead class="table-light">
-                        <tr><th>Food Item</th><th>Calories</th><th>Protein</th><th>Carbs</th><th>Fat</th><th>Pros</th><th>Cons</th></tr>
-                    </thead>
-                    <tbody>
-                        ${data.comparison_table.map(i => `
-                            <tr class="${i.name === data.winner ? 'table-success' : ''}">
-                                <td><strong>${i.name}</strong> ${i.name === data.winner ? '??' : ''}</td>
-                                <td>${i.calories} kcal</td>
-                                <td>${i.protein}g</td>
-                                <td>${i.carbs}g</td>
-                                <td>${i.fat}g</td>
-                                <td><span class="badge bg-success-subtle text-success">${i.pros.join(', ')}</span></td>
-                                <td><span class="badge bg-danger-subtle text-danger">${i.cons.join(', ')}</span></td>
+            const body = document.getElementById('compareResultBody');
+            body.innerHTML = `
+                <div class="alert alert-success d-flex align-items-center gap-3 p-3 mb-4 rounded-3">
+                    <div class="fs-2 text-warning"><i class="fa-solid fa-trophy"></i></div>
+                    <div>
+                        <h6 class="fw-bold mb-1">Winning Dish: ${data.winner}</h6>
+                        <div class="small">${data.summary_reason}</div>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle border rounded-3 overflow-hidden">
+                        <thead class="table-light">
+                            <tr class="small text-secondary">
+                                <th>Food Item</th>
+                                <th>Calories</th>
+                                <th>Protein</th>
+                                <th>Carbs</th>
+                                <th>Fat</th>
+                                <th>Pros</th>
+                                <th>Cons</th>
                             </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            </div>
-        `;
+                        </thead>
+                        <tbody>
+                            ${data.comparison_table.map(i => `
+                                <tr class="${i.name === data.winner ? 'table-success' : ''}">
+                                    <td><strong>${i.name}</strong> ${i.name === data.winner ? '🏆' : ''}</td>
+                                    <td><strong>${i.calories}</strong> <small class="text-muted">kcal</small></td>
+                                    <td>${i.protein}g</td>
+                                    <td>${i.carbs}g</td>
+                                    <td>${i.fat}g</td>
+                                    <td><span class="badge bg-success-subtle text-success">${i.pros.join(', ')}</span></td>
+                                    <td><span class="badge bg-danger-subtle text-danger">${i.cons.join(', ')}</span></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        } catch (e) {
+            alert('Comparison failed: ' + e);
+        }
     }
 
-    async function loadHistory() {
-        const res = await fetch('/api/v1/history?limit=20');
-        const data = await res.json();
-        const tbody = document.getElementById('historyTableBody');
-        tbody.innerHTML = data.history.map(h => `
-            <tr>
-                <td>#${h.id}</td>
-                <td><span class="badge bg-secondary">${h.analysis_type}</span></td>
-                <td><strong>${h.summary_title}</strong></td>
-                <td>${h.total_calories ? h.total_calories + ' kcal' : '-'}</td>
-                <td>${h.total_protein ? `${h.total_protein}g / ${h.total_carbs}g / ${h.total_fat}g` : '-'}</td>
-                <td><small class="text-muted">${new Date(h.created_at).toLocaleString()}</small></td>
-                <td><button class="btn btn-sm btn-outline-danger" onclick="deleteHistory(${h.id})"><i class="fa-solid fa-trash"></i></button></td>
-            </tr>
-        `).join('');
+    async function loadHistoryRecords() {
+        const filterType = document.getElementById('historyFilterType').value;
+        let url = '/api/v1/history?limit=30';
+        if (filterType) url += '&analysis_type=' + filterType;
+
+        try {
+            const res = await fetch(url);
+            const data = await res.json();
+            const tbody = document.getElementById('historyTableBody');
+            
+            if (!data.history.length) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No records found in database.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.history.map(h => `
+                <tr>
+                    <td><span class="badge bg-light text-secondary border">#${h.id}</span></td>
+                    <td><span class="badge bg-secondary-subtle text-secondary">${h.analysis_type}</span></td>
+                    <td><strong>${h.summary_title}</strong></td>
+                    <td>${h.total_calories ? '<strong class="text-success">' + h.total_calories + '</strong> kcal' : '-'}</td>
+                    <td>${h.total_protein ? '<small>P: ' + h.total_protein + 'g | C: ' + h.total_carbs + 'g | F: ' + h.total_fat + 'g</small>' : '-'}</td>
+                    <td><small class="text-muted">${new Date(h.created_at).toLocaleString()}</small></td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            <button class="btn btn-sm btn-outline-primary" onclick="viewHistoryDetail(${h.id})"><i class="fa-solid fa-eye"></i></button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteHistoryItem(${h.id})"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        } catch (e) {
+            alert('Failed to load history: ' + e);
+        }
     }
 
-    async function deleteHistory(id) {
-        if (!confirm('Delete this record?')) return;
-        await fetch(`/api/v1/history/${id}`, { method: 'DELETE' });
-        loadHistory();
+    async function viewHistoryDetail(id) {
+        try {
+            const res = await fetch('/api/v1/history/' + id);
+            const data = await res.json();
+            document.getElementById('historyDetailTitle').innerText = `Record #${data.id}: ${data.summary_title}`;
+            document.getElementById('historyDetailJson').innerText = JSON.stringify(data.payload, null, 2);
+            new bootstrap.Modal(document.getElementById('historyDetailModal')).show();
+        } catch (e) {
+            alert('Failed to load record detail: ' + e);
+        }
     }
 
-    // Auto-load history when tab clicked
-    document.getElementById('pills-history-tab').addEventListener('click', loadHistory);
+    async function deleteHistoryItem(id) {
+        if (!confirm('Delete record #' + id + ' from Neon PostgreSQL?')) return;
+        try {
+            await fetch('/api/v1/history/' + id, { method: 'DELETE' });
+            loadHistoryRecords();
+        } catch (e) {
+            alert('Delete failed: ' + e);
+        }
+    }
+
+    document.getElementById('tab-history-btn').addEventListener('click', loadHistoryRecords);
+
+    async function openFoodCatalogModal() {
+        try {
+            const res = await fetch('/api/v1/food/items');
+            const data = await res.json();
+            const tbody = document.getElementById('catalogTableBody');
+            tbody.innerHTML = data.items.map(item => `
+                <tr>
+                    <td><strong>${item.display_name}</strong> <span class="badge bg-light text-muted border">${item.label}</span></td>
+                    <td><span class="badge bg-secondary-subtle text-secondary">${item.category}</span></td>
+                    <td><strong>${item.calories_per_100g}</strong> kcal</td>
+                    <td>${item.protein_per_100g}g</td>
+                    <td>${item.carbs_per_100g}g</td>
+                    <td>${item.fat_per_100g}g</td>
+                    <td><small class="text-muted">${item.serving_name} (${item.serving_grams}g)</small></td>
+                </tr>
+            `).join('');
+            new bootstrap.Modal(document.getElementById('foodCatalogModal')).show();
+        } catch (e) {
+            alert('Failed to load food catalog: ' + e);
+        }
+    }
+
+    loadPackagePreset('protein_bar');
+    loadMenuPreset('indian');
+    loadComparePreset('burger_vs_salad');
 </script>
 </body>
 </html>
