@@ -14,9 +14,11 @@ class Settings(BaseSettings):
     # CORS Configuration for Frontend access
     CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://127.0.0.1:3000", "*"]
 
-    # Model Weights Path
+    # Model Weights Path (v2 103-class model default, v1 fallback)
     YOLO_MODEL_PATH: str = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "../../../runs/detect/foodlens_v1_gpu-3/weights/best.pt")
+        os.path.join(os.path.dirname(__file__), "../../../runs/detect/foodlens_v2_103/weights/best.pt")
+        if os.path.exists(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../runs/detect/foodlens_v2_103/weights/best.pt")))
+        else os.path.join(os.path.dirname(__file__), "../../../runs/detect/foodlens_v1_gpu-3/weights/best.pt")
     )
 
     model_config = SettingsConfigDict(
