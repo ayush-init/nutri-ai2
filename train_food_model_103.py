@@ -10,21 +10,21 @@ import os
 
 def main():
     print("=" * 60)
-    print("🔥 FoodLens AI - 103-Class YOLO11 Training Engine")
+    print("FoodLens AI - 103-Class YOLO11 Training Engine")
     print("=" * 60)
 
     # Check CUDA Availability
     if torch.cuda.is_available():
         gpu_name = torch.cuda.get_device_name(0)
         device_id = 0
-        print(f"✓ NVIDIA GPU Detected: {gpu_name} (Device: {device_id})")
+        print(f"[OK] NVIDIA GPU Detected: {gpu_name} (Device: {device_id})")
     else:
         device_id = "cpu"
-        print("⚠ No CUDA GPU found, using CPU.")
+        print("[WARN] No CUDA GPU found, using CPU.")
 
     dataset_yaml = "datasets/food_yolo_103/data.yaml"
     if not os.path.exists(dataset_yaml):
-        print(f"❌ Error: {dataset_yaml} not found!")
+        print(f"[ERROR] {dataset_yaml} not found!")
         print("Please run 'python scripts/prepare_foodseg103_full.py' first.")
         sys.exit(1)
 
@@ -34,10 +34,10 @@ def main():
 
     print("
 [Step 2/2] Launching 103-Class Food Training...")
-    print("  • Epochs: 40")
-    print("  • Image Resolution: 640x640")
-    print("  • Batch Size: 16 (optimized for GPU)")
-    print("  • Output Run: runs/detect/foodlens_103_gpu")
+    print("  * Epochs: 40")
+    print("  * Image Resolution: 640x640")
+    print("  * Batch Size: 16 (optimized for GPU)")
+    print("  * Output Run: runs/detect/foodlens_103_gpu")
     print("-" * 60)
 
     results = model.train(
@@ -54,7 +54,7 @@ def main():
 
     print("
 " + "=" * 60)
-    print("🎉 TRAINING COMPLETED SUCCESSFULLY!")
+    print("TRAINING COMPLETED SUCCESSFULLY!")
     print("Best weights saved at:")
     print("  runs/detect/foodlens_103_gpu/weights/best.pt")
     print("=" * 60)
