@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FoodLens AI — Smart Nutrition & Menu Assistant</title>
+    <title>FoodLens AI — Smart Food & Nutrition Assistant</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,6 +13,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <!-- Viewer.js (Full Screen Lightbox & Zoom) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/viewerjs/1.11.6/viewer.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/viewerjs/1.11.6/viewer.min.js"></script>
 
     <style>
         :root {
@@ -92,9 +95,10 @@
             border: 2px dashed #cbd5e1;
             border-radius: var(--radius-lg);
             background: #f8fafc;
-            padding: 28px 20px;
+            padding: 24px 16px;
             text-align: center;
             cursor: pointer;
+            position: relative;
             transition: all 0.2s ease;
         }
         .dropzone-box:hover, .dropzone-box.dragover {
@@ -160,20 +164,39 @@
             color: var(--primary-dark);
         }
 
-        /* Pulse live indicator */
-        .live-dot {
-            width: 8px;
-            height: 8px;
-            background-color: var(--primary);
-            border-radius: 50%;
-            display: inline-block;
-            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
-            animation: pulse-green 2s infinite;
+        /* Image Action Overlay Buttons */
+        .image-container-wrapper {
+            position: relative;
+            background: #f8fafc;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            border: 1px solid var(--border-light);
         }
-        @keyframes pulse-green {
-            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-            70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        .image-overlay-controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 8px;
+            z-index: 10;
+        }
+        .btn-img-action {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(0,0,0,0.1);
+            color: #334155;
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+            transition: all 0.15s ease;
+        }
+        .btn-img-action:hover {
+            background: #ffffff;
+            color: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.12);
         }
 
         .loading-spinner { display: none; }
@@ -190,11 +213,7 @@
             </div>
             <span class="brand-logo fs-4">FoodLens AI</span>
         </a>
-        <div class="d-flex align-items-center gap-3">
-            <div class="d-none d-md-flex align-items-center gap-2 bg-light px-3 py-1 rounded-pill border" id="neonHealthBadge">
-                <span class="live-dot"></span>
-                <span class="small fw-semibold text-secondary" id="healthStatusText">Neon PostgreSQL Connected</span>
-            </div>
+        <div class="d-flex align-items-center gap-2">
             <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-semibold" onclick="openFoodCatalogModal()">
                 <i class="fa-solid fa-apple-whole text-success me-1"></i> 15 Food Classes
             </button>
@@ -232,7 +251,7 @@
         </li>
         <li class="nav-item">
             <button class="nav-link" id="tab-history-btn" data-bs-toggle="pill" data-bs-target="#tab-history" type="button">
-                <i class="fa-solid fa-database me-1"></i> 5. Neon DB History
+                <i class="fa-solid fa-clock-rotate-left me-1"></i> 5. History & Past Scans
             </button>
         </li>
     </ul>
@@ -240,17 +259,19 @@
     <!-- Tabs Content -->
     <div class="tab-content" id="mainTabContent">
 
-        <!-- TAB 1: FOOD PHOTO ANALYSIS -->
+        <!-- ================= TAB 1: FOOD PHOTO ANALYSIS ================= -->
         <div class="tab-pane fade show active" id="tab-photo" role="tabpanel">
             <div class="row g-4">
+                <!-- Left: Upload Box & Settings -->
                 <div class="col-lg-5">
                     <div class="card card-custom p-4 h-100">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h5 class="fw-bold mb-0"><i class="fa-solid fa-cloud-arrow-up text-success me-2"></i>Analyze Food Photo</h5>
+                            <h5 class="fw-bold mb-0"><i class="fa-solid fa-cloud-arrow-up text-success me-2"></i>Upload Food Photo</h5>
                             <span class="badge bg-light text-secondary border">YOLO11</span>
                         </div>
-                        <p class="text-secondary small mb-3">Upload a meal photo to detect food items, bounding boxes, and estimated calorie/macro ranges.</p>
+                        <p class="text-secondary small mb-3">Upload a meal photo to detect food items, view bounding boxes, and calculate calories.</p>
                         
+                        <!-- Quick Test Preset -->
                         <div class="mb-3">
                             <label class="small text-muted fw-bold d-block mb-2">QUICK TEST PRESET:</label>
                             <div class="d-flex gap-2 flex-wrap">
@@ -258,16 +279,32 @@
                             </div>
                         </div>
 
-                        <div class="dropzone-box mb-3" id="photoDropzone" onclick="document.getElementById('photoInput').click()">
+                        <!-- Dropzone with Preview and Remove button -->
+                        <div class="dropzone-box mb-3" id="photoDropzone">
                             <input type="file" id="photoInput" accept="image/*" class="d-none" onchange="handleFileSelect(event)">
-                            <div id="dropzoneContent">
+                            
+                            <!-- Empty Upload State -->
+                            <div id="dropzoneContent" onclick="document.getElementById('photoInput').click()">
                                 <i class="fa-solid fa-images fs-1 text-secondary mb-2"></i>
                                 <div class="fw-semibold">Click to select photo or drag & drop</div>
                                 <div class="small text-muted mt-1">JPEG, PNG, WEBP (Max 10MB)</div>
                             </div>
-                            <img id="previewThumb" class="img-fluid rounded-3 mt-2 d-none" style="max-height: 180px;" alt="Selected Meal">
+
+                            <!-- Preview State with Remove & Change buttons -->
+                            <div id="previewContainer" class="d-none position-relative">
+                                <img id="previewThumb" class="img-fluid rounded-3 border" style="max-height: 200px; width: 100%; object-fit: cover;" alt="Selected Meal">
+                                <div class="d-flex justify-content-center gap-2 mt-2">
+                                    <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-semibold" onclick="clearSelectedImage(event)">
+                                        <i class="fa-solid fa-trash me-1"></i> Remove Image
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-semibold" onclick="document.getElementById('photoInput').click()">
+                                        <i class="fa-solid fa-arrow-rotate-right me-1"></i> Change Image
+                                    </button>
+                                </div>
+                            </div>
                         </div>
 
+                        <!-- Confidence Slider -->
                         <div class="mb-4">
                             <div class="d-flex justify-content-between small fw-bold mb-1">
                                 <span>Detection Confidence Threshold</span>
@@ -276,6 +313,7 @@
                             <input type="range" class="form-range" id="confSlider" min="0.10" max="0.90" step="0.05" value="0.25" oninput="document.getElementById('confDisplay').innerText=this.value">
                         </div>
 
+                        <!-- Analyze Button -->
                         <button class="btn btn-primary-gradient w-100 py-2 d-flex align-items-center justify-content-center gap-2" id="analyzeBtn" onclick="runFoodAnalysis()">
                             <i class="fa-solid fa-wand-magic-sparkles"></i>
                             <span id="analyzeBtnText">Analyze Food Nutrition</span>
@@ -284,6 +322,7 @@
                     </div>
                 </div>
 
+                <!-- Right: Analysis Results -->
                 <div class="col-lg-7">
                     <div class="card card-custom p-4 h-100" id="photoResultPlaceholder">
                         <div class="text-center py-5 text-secondary">
@@ -299,6 +338,7 @@
                             <span class="badge bg-light text-muted border" id="latencyBadge">120ms</span>
                         </div>
 
+                        <!-- Macro Stat Cards Grid -->
                         <div class="row g-3 mb-4">
                             <div class="col-6 col-md-3">
                                 <div class="macro-stat-box stat-cal">
@@ -330,10 +370,23 @@
                             </div>
                         </div>
 
+                        <!-- Image with Fullscreen & Download buttons + Macro Ratio Donut -->
                         <div class="row g-3 mb-4">
-                            <div class="col-md-7 text-center">
-                                <div class="position-relative border rounded-3 overflow-hidden bg-light">
-                                    <img id="annotatedImageResult" class="img-fluid" style="max-height: 260px; object-fit: contain;" src="" alt="Detections">
+                            <div class="col-md-7">
+                                <div class="image-container-wrapper text-center">
+                                    <!-- Controls -->
+                                    <div class="image-overlay-controls">
+                                        <button class="btn btn-img-action" onclick="openFullscreenViewer()" title="View Full Screen with Zoom">
+                                            <i class="fa-solid fa-expand text-primary me-1"></i> Fullscreen
+                                        </button>
+                                        <button class="btn btn-img-action" onclick="downloadAnnotatedImage()" title="Download Detected Image">
+                                            <i class="fa-solid fa-download text-success me-1"></i> Download
+                                        </button>
+                                    </div>
+                                    <!-- Annotated Image -->
+                                    <div id="imageGalleryWrapper" class="p-2">
+                                        <img id="annotatedImageResult" class="img-fluid rounded-2" style="max-height: 240px; cursor: zoom-in; object-fit: contain;" src="" alt="Detected Meal Preview">
+                                    </div>
                                 </div>
                             </div>
                             <div class="col-md-5 d-flex flex-column align-items-center justify-content-center bg-light rounded-3 p-3 border">
@@ -344,6 +397,7 @@
                             </div>
                         </div>
 
+                        <!-- Detected Food Items Table -->
                         <h6 class="fw-bold mb-2"><i class="fa-solid fa-list-check text-primary me-2"></i>Detected Items & Portions</h6>
                         <div class="table-responsive mb-3">
                             <table class="table table-sm align-middle">
@@ -360,6 +414,7 @@
                             </table>
                         </div>
 
+                        <!-- Scientific Disclaimer Banner -->
                         <div class="alert alert-warning d-flex align-items-center gap-2 p-2 mb-0 small" role="alert">
                             <i class="fa-solid fa-triangle-exclamation text-warning fs-5"></i>
                             <div id="disclaimerMsg">Estimates are derived from visual detection and standard portion assumptions. Not intended as medical or laboratory measurements.</div>
@@ -369,7 +424,7 @@
             </div>
         </div>
 
-        <!-- TAB 2: PACKAGED FOOD OCR -->
+        <!-- ================= TAB 2: PACKAGED FOOD OCR ================= -->
         <div class="tab-pane fade" id="tab-package" role="tabpanel">
             <div class="row g-4">
                 <div class="col-lg-5">
@@ -411,7 +466,7 @@
             </div>
         </div>
 
-        <!-- TAB 3: MENU INTELLIGENCE -->
+        <!-- ================= TAB 3: MENU INTELLIGENCE ================= -->
         <div class="tab-pane fade" id="tab-menu" role="tabpanel">
             <div class="row g-4">
                 <div class="col-lg-5">
@@ -463,7 +518,7 @@
             </div>
         </div>
 
-        <!-- TAB 4: FOOD COMPARISON -->
+        <!-- ================= TAB 4: FOOD COMPARISON ================= -->
         <div class="tab-pane fade" id="tab-compare" role="tabpanel">
             <div class="card card-custom p-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -506,13 +561,13 @@
             </div>
         </div>
 
-        <!-- TAB 5: NEON DB HISTORY -->
+        <!-- ================= TAB 5: HISTORY & PAST SCANS ================= -->
         <div class="tab-pane fade" id="tab-history" role="tabpanel">
             <div class="card card-custom p-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <div>
-                        <h5 class="fw-bold mb-1"><i class="fa-solid fa-database text-success me-2"></i>Neon PostgreSQL History Records</h5>
-                        <p class="text-secondary small mb-0">All food photo analyses, OCR scans, and recommendations stored persistently in the cloud database.</p>
+                        <h5 class="fw-bold mb-1"><i class="fa-solid fa-clock-rotate-left text-success me-2"></i>Recent Scans & History</h5>
+                        <p class="text-secondary small mb-0">All past food photo analyses, OCR scans, and recommendations.</p>
                     </div>
                     <div class="d-flex gap-2">
                         <select class="form-select form-select-sm" id="historyFilterType" onchange="loadHistoryRecords()">
@@ -540,7 +595,7 @@
                             </tr>
                         </thead>
                         <tbody id="historyTableBody">
-                            <tr><td colspan="7" class="text-center py-4 text-muted">Loading records from Neon PostgreSQL...</td></tr>
+                            <tr><td colspan="7" class="text-center py-4 text-muted">Loading history records...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -559,7 +614,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p class="text-secondary small">These 15 food classes were fine-tuned with YOLO and seeded into your Neon PostgreSQL database with baseline nutrition per 100g.</p>
+                <p class="text-secondary small">These 15 food classes are fine-tuned with YOLO and stored in the database with baseline nutrition per 100g.</p>
                 <div class="table-responsive">
                     <table class="table table-sm align-middle">
                         <thead class="table-light">
@@ -592,20 +647,9 @@
 <script>
     let selectedFileBlob = null;
     let currentDonutChart = null;
+    let currentViewer = null;
 
-    async function checkHealth() {
-        try {
-            const res = await fetch('/api/v1/health');
-            const data = await res.json();
-            if (data.status === 'healthy') {
-                document.getElementById('healthStatusText').innerText = `Neon DB Connected (${data.database.latency_ms}ms)`;
-            }
-        } catch (e) {
-            document.getElementById('healthStatusText').innerText = 'Backend Offline';
-        }
-    }
-    checkHealth();
-
+    // --- File Drag & Drop ---
     const dropzone = document.getElementById('photoDropzone');
     dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
     dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
@@ -629,10 +673,19 @@
         reader.onload = (e) => {
             const preview = document.getElementById('previewThumb');
             preview.src = e.target.result;
-            preview.classList.remove('d-none');
+            document.getElementById('previewContainer').classList.remove('d-none');
             document.getElementById('dropzoneContent').classList.add('d-none');
         };
         reader.readAsDataURL(file);
+    }
+
+    function clearSelectedImage(event) {
+        if (event) event.stopPropagation();
+        selectedFileBlob = null;
+        document.getElementById('photoInput').value = '';
+        document.getElementById('previewThumb').src = '';
+        document.getElementById('previewContainer').classList.add('d-none');
+        document.getElementById('dropzoneContent').classList.remove('d-none');
     }
 
     async function loadSampleImage() {
@@ -646,6 +699,7 @@
         }
     }
 
+    // --- Tab 1: Run Food Analysis ---
     async function runFoodAnalysis() {
         if (!selectedFileBlob) {
             alert('Please select an image first or click "Sample Meal" preset.');
@@ -678,9 +732,33 @@
             document.getElementById('cardFatRange').innerText = `${data.total_fat.min_val} - ${data.total_fat.max_val}g`;
 
             document.getElementById('latencyBadge').innerText = `${data.processing_time_ms}ms`;
-            document.getElementById('annotatedImageResult').src = data.annotated_image_url;
+            
+            // Set Annotated Image & Re-init ViewerJS
+            const imgEl = document.getElementById('annotatedImageResult');
+            imgEl.src = data.annotated_image_url;
+            
+            if (currentViewer) {
+                currentViewer.destroy();
+            }
+            currentViewer = new Viewer(document.getElementById('imageGalleryWrapper'), {
+                inline: false,
+                button: true,
+                navbar: false,
+                title: false,
+                toolbar: {
+                    zoomIn: 1,
+                    zoomOut: 1,
+                    oneToOne: 1,
+                    reset: 1,
+                    rotateLeft: 1,
+                    rotateRight: 1,
+                    flipHorizontal: 1,
+                }
+            });
+
             document.getElementById('disclaimerMsg').innerText = data.disclaimer;
 
+            // Render Items Table
             const tbody = document.getElementById('detectedItemsTableBody');
             tbody.innerHTML = data.detected_items.map(item => `
                 <tr>
@@ -702,6 +780,7 @@
                 </tr>
             `).join('');
 
+            // Render Macro Donut Chart
             renderMacroChart(data.total_protein.avg_val, data.total_carbs.avg_val, data.total_fat.avg_val);
 
         } catch (e) {
@@ -710,6 +789,29 @@
             btn.disabled = false;
             spinner.style.display = 'none';
         }
+    }
+
+    function openFullscreenViewer() {
+        if (currentViewer) {
+            currentViewer.show();
+        } else {
+            const img = document.getElementById('annotatedImageResult');
+            if (img.src) {
+                currentViewer = new Viewer(document.getElementById('imageGalleryWrapper'));
+                currentViewer.show();
+            }
+        }
+    }
+
+    function downloadAnnotatedImage() {
+        const img = document.getElementById('annotatedImageResult');
+        if (!img.src) return;
+        const link = document.createElement('a');
+        link.href = img.src;
+        link.download = 'foodlens_detected_meal.jpg';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     }
 
     function renderMacroChart(prot, carbs, fat) {
@@ -737,6 +839,7 @@
         });
     }
 
+    // --- Tab 2: Package Presets & Analysis ---
     const PACKAGE_PRESETS = {
         protein_bar: "Nutrition Facts\nServing Size 1 protein bar (60g)\nCalories 210\nTotal Fat 8g\nTotal Carbohydrate 22g\nTotal Sugars 7g\nProtein 12g\nSodium 140mg\nIngredients: Rolled oats, whey protein isolate, almond butter, honey, sea salt.\nContains: Almonds, Milk.",
         oat_milk: "Nutrition Facts\nServing Size 1 cup (240ml)\nCalories 120\nTotal Fat 5g\nTotal Carbohydrate 16g\nTotal Sugars 4g\nProtein 3g\nSodium 100mg\nIngredients: Oat base (water, oats), sunflower oil, dipotassium phosphate, calcium carbonate, sea salt.\nContains: Gluten.",
@@ -789,6 +892,7 @@
         }
     }
 
+    // --- Tab 3: Menu Presets & Recommendations ---
     const MENU_PRESETS = {
         indian: "1. Paneer Butter Masala - Rs. 280\n2. Dal Tadka - Rs. 160\n3. Tandoori Chicken - Rs. 320\n4. Steamed Rice - Rs. 120\n5. Roti - Rs. 20\n6. Chole Bhature - Rs. 200",
         cafe: "1. Grilled Chicken Salad - $12.50\n2. Caesar Salad - $10.00\n3. Steamed Rice Bowl - $7.00\n4. Veg Biryani - $11.00",
@@ -842,6 +946,7 @@
         }
     }
 
+    // --- Tab 4: Food Comparison Presets & Execution ---
     const COMPARE_PRESETS = {
         burger_vs_salad: "Cheeseburger, Grilled Chicken Salad",
         paneer_vs_dal: "Paneer Butter Masala, Dal Tadka",
@@ -910,6 +1015,7 @@
         }
     }
 
+    // --- Tab 5: History ---
     async function loadHistoryRecords() {
         const filterType = document.getElementById('historyFilterType').value;
         let url = '/api/v1/history?limit=30';
@@ -921,7 +1027,7 @@
             const tbody = document.getElementById('historyTableBody');
             
             if (!data.history.length) {
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No records found in database.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No records found.</td></tr>';
                 return;
             }
 
@@ -959,7 +1065,7 @@
     }
 
     async function deleteHistoryItem(id) {
-        if (!confirm('Delete record #' + id + ' from Neon PostgreSQL?')) return;
+        if (!confirm('Delete record #' + id + '?')) return;
         try {
             await fetch('/api/v1/history/' + id, { method: 'DELETE' });
             loadHistoryRecords();
@@ -970,6 +1076,7 @@
 
     document.getElementById('tab-history-btn').addEventListener('click', loadHistoryRecords);
 
+    // --- Food Classes Catalog Modal ---
     async function openFoodCatalogModal() {
         try {
             const res = await fetch('/api/v1/food/items');
